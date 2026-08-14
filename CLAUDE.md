@@ -5,6 +5,17 @@ map, combat resolution, political and doctrine systems.
 
 ---
 
+## Live links
+
+- **Game:** https://milesbrown34.github.io/AxisAndAllies/
+- **HexWorld v2 (current map generator):** https://milesbrown34.github.io/AxisAndAllies/hexworld-v2/
+- **HexWorld v2 progress spec:** https://milesbrown34.github.io/AxisAndAllies/hexworld-v2/docs/v2-spec.html
+
+Repo is public; GitHub Pages serves the repo root, so both the game and
+`hexworld-v2/` are reachable directly.
+
+---
+
 ## Stack
 
 - **Server:** Node (`server.js`) — lightweight, serves the client
@@ -34,12 +45,19 @@ when tuning balance.
 
 - `A&A_40Anni_Rulebook_WEB.pdf` — the official Axis & Allies rulebook this
   project draws from.
-- `civ5_map_architecture_deep_dive.md` — research notes on Civ V's map
-  architecture, informing the hex/territory design.
+- `civ5_map_architecture_deep_dive.md` — early research notes on Civ V's map
+  architecture. Superseded as the active map-gen lineage by `hexworld-v2/`
+  below, kept for historical context.
+- `hexworld-v2/` — **the current map generator for this project.** Geologically
+  plausible procedural world generation (tectonics, climate, hydrology,
+  biomes, six themes). Self-contained `index.html`, zero install to run —
+  see `hexworld-v2/README.md` and `hexworld-v2/docs/v2-spec.html` for the
+  full build history. Not yet wired into `js/map.js` / `js/data/mapData.js`;
+  that integration is still open.
 
-Both are reference, not requirements. Do not treat rulebook text as a binding
-spec unless Miles has said so — this game is deliberately *not* a straight
-reimplementation.
+These are reference, not requirements. Do not treat rulebook text as a
+binding spec unless Miles has said so — this game is deliberately *not* a
+straight reimplementation.
 
 ---
 
