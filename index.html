@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iron & Crowns: Tactical Grand Strategy</title>
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+  <div id="game-container">
+    
+    <!-- 1. HEADER: Faction Status & Global Resources -->
+    <header>
+      <div class="brand-title">IRON &amp; CROWNS</div>
+      
+      <div class="faction-status-bar">
+        <div id="active-faction-badge" class="faction-badge active-red">
+          <span id="faction-turn-name">IMPERIUM OF IRON</span>
+        </div>
+        <div class="turn-counter">Season: <span id="current-season">Spring 1914</span> (Round <span id="current-round">1</span>)</div>
+      </div>
+      
+      <div class="resources-container">
+        <!-- Gold -->
+        <div class="resource-item res-gold" title="Gold: Earned from cities and used to buy units & upgrades">
+          <i>Gold:</i>
+          <span class="resource-value" id="val-gold">0</span>
+        </div>
+        <!-- Prestige -->
+        <div class="resource-item res-prestige" title="Prestige: Earned from capitals & offices. Used for Doctrines, Bidding, and Bribes">
+          <i>Prestige:</i>
+          <span class="resource-value" id="val-prestige">0</span>
+        </div>
+        <!-- Oil -->
+        <div class="resource-item res-oil" title="Oil: Extracted from nodes. Spent as capital cost to build Tanks & Ships">
+          <i>Oil:</i>
+          <span class="resource-value" id="val-oil">0</span>
+        </div>
+        <!-- Metal -->
+        <div class="resource-item res-metal" title="Metal: Extracted from nodes. Spent to build military units & upgrades">
+          <i>Metal:</i>
+          <span class="resource-value" id="val-metal">0</span>
+        </div>
+        <!-- Wood -->
+        <div class="resource-item res-wood" title="Wood: Extracted from nodes. Spent to build basic infantry, transports & outposts">
+          <i>Wood:</i>
+          <span class="resource-value" id="val-wood">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. MAIN WORKSPACE: Map (Left) & Dashboard (Right) -->
+    <main>
+      
+      <!-- Interactive SVG Map Viewport -->
+      <div id="map-viewport">
+        <svg id="map-svg" viewBox="0 0 2600 1200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <!-- 1. Grassland (Flat) -->
+            <pattern id="pattern-grassland" width="150" height="150" patternUnits="userSpaceOnUse">
+              <image href="images/tex_grassland.png" x="0" y="0" width="150" height="150" />
+            </pattern>
+
+            <!-- 2. Grassland Hill -->
+            <pattern id="pattern-grassland-hill" width="150" height="150" patternUnits="userSpaceOnUse">
+              <image href="images/tex_grassland.png" x="0" y="0" width="150" height="150" />
+              <!-- Hill contours and grass -->
+              <path d="M 10,120 Q 75,50 140,120" fill="none" stroke="#1d3d22" stroke-width="3.5" stroke-linecap="round" opacity="0.65"/>
+              <path d="M 15,115 Q 75,55 135,115" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.3"/>
+            </pattern>
+
+            <!-- 3. Plains (Flat) -->
+            <pattern id="pattern-plains" width="150" height="150" patternUnits="userSpaceOnUse">
+              <image href="images/tex_plains.png" x="0" y="0" width="150" height="150" />
+            </pattern>
+
+            <!-- 4. Plains Hill -->
+            <pattern id="pattern-plains-hill" width="150" height="150" patternUnits="userSpaceOnUse">
+              <image href="images/tex_plains.png" x="0" y="0" width="150" height="150" />
+              <!-- Hill contours and straw -->
+              <path d="M 10,120 Q 75,50 140,120" fill="none" stroke="#3b3d1b" stroke-width="3.5" stroke-linecap="round" opacity="0.65"/>
+              <path d="M 15,115 Q 75,55 135,115" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.3"/>
+            </pattern>
+
+            <!-- 5. Tundra (Flat) -->
+            <pattern id="pattern-tundra" width="150" height="150" patternUnits="userSpaceOnUse">
+              <image href="images/tex_tundra.png" x="0" y="0" width="150" height="150" />
+            </pattern>
+
+            <!-- 6. Tundra Hill -->
+            <pattern id="pattern-tundra-hill" width="150" height="150" patternUnits="userSpaceOnUse">
+              <image href="images/tex_tundra.png" x="0" y="0" width="150" height="150" />
+              <!-- Snowy hill outlines -->
+              <path d="M 10,120 Q 75,50 140,120" fill="none" stroke="#2c332f" stroke-width="3.5" stroke-linecap="round" opacity="0.65"/>
+              <path d="M 15,115 Q 75,55 135,115" fill="none" stroke="#ffffff" stroke-width="2.0" opacity="0.5"/>
+            </pattern>
+
+            <!-- 7. Desert (Flat) -->
+            <pattern id="pattern-desert" width="150" height="150" patternUnits="userSpaceOnUse">
+              <image href="images/tex_desert.png" x="0" y="0" width="150" height="150" />
+            </pattern>
+
+            <!-- 8. Desert Hill -->
+            <pattern id="pattern-desert-hill" width="150" height="150" patternUnits="userSpaceOnUse">
+              <image href="images/tex_desert.png" x="0" y="0" width="150" height="150" />
+              <!-- Large sand dunes -->
+              <path d="M 10,120 C 50,60 100,40 140,120" fill="none" stroke="#876326" stroke-width="3.5" stroke-linecap="round" opacity="0.65"/>
+              <path d="M 15,115 C 50,65 100,45 135,115" fill="none" stroke="#ffebc2" stroke-width="1.5" opacity="0.4"/>
+            </pattern>
+
+            <!-- 9. Forest (Flat) -->
+            <pattern id="pattern-forest" width="180" height="180" patternUnits="userSpaceOnUse">
+              <image href="images/tex_forest.png" x="0" y="0" width="180" height="180" />
+            </pattern>
+
+            <!-- 10. Forest Hill -->
+            <pattern id="pattern-forest-hill" width="180" height="180" patternUnits="userSpaceOnUse">
+              <image href="images/tex_forest.png" x="0" y="0" width="180" height="180" />
+              <!-- Hill backdrop and Pine Trees -->
+              <path d="M 10,140 Q 90,60 170,140" fill="none" stroke="#0e1f0f" stroke-width="4.0" stroke-linecap="round" opacity="0.65"/>
+              <path d="M 15,135 Q 90,65 165,135" fill="none" stroke="#82b885" stroke-width="1.5" opacity="0.3"/>
+            </pattern>
+
+            <!-- 11. Jungle (Flat) -->
+            <pattern id="pattern-jungle" width="180" height="180" patternUnits="userSpaceOnUse">
+              <image href="images/tex_jungle.png" x="0" y="0" width="180" height="180" />
+            </pattern>
+
+            <!-- 12. Jungle Hill -->
+            <pattern id="pattern-jungle-hill" width="180" height="180" patternUnits="userSpaceOnUse">
+              <image href="images/tex_jungle.png" x="0" y="0" width="180" height="180" />
+              <!-- Hill and jungle canopy -->
+              <path d="M 10,140 Q 90,60 170,140" fill="none" stroke="#081f09" stroke-width="4.0" stroke-linecap="round" opacity="0.65"/>
+              <path d="M 15,135 Q 90,65 165,135" fill="none" stroke="#7ebf82" stroke-width="1.5" opacity="0.3"/>
+            </pattern>
+
+            <!-- 13. Mountain -->
+            <pattern id="pattern-mountain" width="120" height="120" patternUnits="userSpaceOnUse">
+              <image href="images/tex_mountain.png" x="0" y="0" width="120" height="120" />
+            </pattern>
+
+            <!-- 14. Sea / Ocean -->
+            <pattern id="pattern-sea" width="240" height="240" patternUnits="userSpaceOnUse">
+              <image href="images/tex_sea.png" x="0" y="0" width="240" height="240" />
+            </pattern>
+
+            <!-- 15. Urban / City Hub -->
+            <pattern id="pattern-urban" width="150" height="150" patternUnits="userSpaceOnUse">
+              <image href="images/tex_grassland.png" x="0" y="0" width="150" height="150" />
+              <!-- Brick structures with roofs -->
+              <rect x="20" y="30" width="30" height="35" fill="#753f34" stroke="#2b1511" stroke-width="1.5"/>
+              <polygon points="20,30 35,10 50,30" fill="#8c4c3e" stroke="#2b1511" stroke-width="1.5"/>
+              
+              <rect x="80" y="80" width="35" height="40" fill="#585c5e" stroke="#202224" stroke-width="1.5"/>
+              <polygon points="80,80 97.5,60 115,80" fill="#6d7275" stroke="#202224" stroke-width="1.5"/>
+              
+              <rect x="30" y="90" width="25" height="35" fill="#614e3e" stroke="#2b2118" stroke-width="1.5"/>
+              <rect x="90" y="20" width="30" height="30" fill="#4a524a" stroke="#1d211d" stroke-width="1.5"/>
+            </pattern>
+
+            <!-- ========================================== -->
+            <!-- REALISTIC SHADING GRADIENTS (CIV 5 STYLE)  -->
+            <!-- ========================================== -->
+            <!-- Rock face gradients -->
+            <linearGradient id="grad-rock-light" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ded9d0"/>
+              <stop offset="100%" stop-color="#918c80"/>
+            </linearGradient>
+            <linearGradient id="grad-rock-shadow" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#696256"/>
+              <stop offset="100%" stop-color="#3c372e"/>
+            </linearGradient>
+
+            <!-- Tree foliage gradients -->
+            <linearGradient id="grad-pine-light" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#558c5c"/>
+              <stop offset="100%" stop-color="#2a522e"/>
+            </linearGradient>
+            <linearGradient id="grad-pine-mid" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#417047"/>
+              <stop offset="100%" stop-color="#203d24"/>
+            </linearGradient>
+            <linearGradient id="grad-pine-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#2d5232"/>
+              <stop offset="100%" stop-color="#142b17"/>
+            </linearGradient>
+            <linearGradient id="grad-deciduous" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#4e8c53"/>
+              <stop offset="100%" stop-color="#1d3d20"/>
+            </linearGradient>
+            <linearGradient id="grad-palm" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#4ebf55"/>
+              <stop offset="100%" stop-color="#144d18"/>
+            </linearGradient>
+
+            <!-- Brick and Brass gradients for Urban Cities -->
+            <linearGradient id="grad-brick" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#b85f4f"/>
+              <stop offset="50%" stop-color="#db7f6e"/>
+              <stop offset="100%" stop-color="#8c4134"/>
+            </linearGradient>
+            <linearGradient id="grad-brick-dark" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#94473a"/>
+              <stop offset="100%" stop-color="#5e271e"/>
+            </linearGradient>
+            <linearGradient id="grad-brick-light" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#e38c7d"/>
+              <stop offset="100%" stop-color="#a6584c"/>
+            </linearGradient>
+            <linearGradient id="grad-brass" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f2cf83"/>
+              <stop offset="50%" stop-color="#c99738"/>
+              <stop offset="100%" stop-color="#735111"/>
+            </linearGradient>
+
+            <!-- Soft Hill shade gradient -->
+            <linearGradient id="grad-hill-shadow" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#000000" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+            </linearGradient>
+
+            <!-- ========================================== -->
+            <!-- 3D FEATURE OVERLAY SYMBOLS (CIV 5 STYLE)   -->
+            <!-- ========================================== -->
+            <!-- Double Mountain Peak -->
+            <g id="sym-mountain">
+              <!-- Fast GPU-friendly Vector Shadows -->
+              <ellipse cx="-4" cy="10.5" rx="13" ry="3.5" fill="rgba(0, 0, 0, 0.25)" />
+              <ellipse cx="4" cy="10.5" rx="9" ry="3" fill="rgba(0, 0, 0, 0.25)" />
+              
+              <!-- Back Peak -->
+              <path d="M -10,8 L -3,-5 Q -1.5,-1 0,8 Z" fill="#827b72" stroke="#332e27" stroke-width="0.3"/>
+              <path d="M -3,-5 L 4,8 Q 0.5,1 0,8 Z" fill="#59534a" stroke="#332e27" stroke-width="0.3"/>
+              <path d="M -5,0 L -3,-5 L -1,0 Q -3,-2 -5,0 Z" fill="#ffffff"/>
+
+              <!-- Front Main Peak (Detailed & Craggy) -->
+              <!-- Left Face (Light/Grey-Rock) -->
+              <path d="M -16,12 L -3,-12 C -4,-6 -6,-2 -7,3 C -8,6 -10,10 -11,12 Z" fill="url(#grad-rock-light)" stroke="#2b251f" stroke-width="0.4"/>
+              <!-- Right Face (Shadow/Dark-Rock) -->
+              <path d="M -3,-12 L 10,12 C 7,12 4,11 1,12 C -2,12 -5,11 -7,12 C -6,10 -8,6 -7,3 C -6,-2 -4,-6 -3,-12 Z" fill="url(#grad-rock-shadow)" stroke="#2b251f" stroke-width="0.4"/>
+              <!-- Craggy crevasse lines -->
+              <path d="M -8,5 Q -5,1 -6,-4" fill="none" stroke="#231d17" stroke-width="0.4"/>
+              <path d="M 2,7 Q 5,2 3,-3" fill="none" stroke="#1d1813" stroke-width="0.4"/>
+              <path d="M -3,-2 Q 1,3 -1,8" fill="none" stroke="#1d1813" stroke-width="0.4"/>
+              <!-- Front Snow Cap -->
+              <path d="M -3,-12 L -7.5,-4 C -6,-3 -5,-5 -4.5,-2 C -4,-1 -3.5,-3 -3,-4 Z" fill="#ffffff"/>
+              <path d="M -3,-12 L 1.5,-4 C 0,-3 -1,-5 -1.5,-2 C -2,-1 -2.5,-3 -3,-4 Z" fill="#dce2e6"/>
+            </g>
+
+            <!-- Reusable Pine Tree -->
+            <g id="sym-tree-pine">
+              <ellipse cx="0" cy="5.5" rx="5" ry="1.6" fill="rgba(0, 0, 0, 0.22)" />
+              <path d="M -0.6,3 L 0.6,3 L 0.8,6 L -0.8,6 Z" fill="#3a2512"/>
+              <!-- Foliage Layer 3 (Bottom) -->
+              <path d="M -5,3.2 C -5.5,3.2 -5.8,2.8 -5.5,2.4 C -5,1.6 -3.5,1.2 0,1.2 C 3.5,1.2 5,1.6 5.5,2.4 C 5.8,2.8 5.5,3.2 5,3.2 Z" fill="url(#grad-pine-dark)" stroke="#0e1f10" stroke-width="0.3"/>
+              <!-- Foliage Layer 2 (Middle) -->
+              <path d="M -4,0.8 C -4.4,0.8 -4.6,0.4 -4.3,0.1 C -3.8,-0.6 -2.5,-1 0,-1 C 2.5,-1 3.8,-0.6 4.3,0.1 C 4.6,0.4 4.4,0.8 4,0.8 Z" fill="url(#grad-pine-mid)" stroke="#0e1f10" stroke-width="0.3"/>
+              <!-- Foliage Layer 1 (Top) -->
+              <path d="M -2.5,-1.6 C -2.8,-1.6 -3,-1.9 -2.7,-2.2 C -2.2,-3 -1.2,-7 0,-7 C 1.2,-7 2.2,-3 2.7,-2.2 C 3,-1.9 2.8,-1.6 2.5,-1.6 Z" fill="url(#grad-pine-light)" stroke="#0e1f10" stroke-width="0.3"/>
+            </g>
+
+            <!-- Pine Forest Cluster -->
+            <g id="sym-forest-pine">
+              <use href="#sym-tree-pine" x="-8" y="-4" transform="scale(0.85)"/>
+              <use href="#sym-tree-pine" x="8" y="-6" transform="scale(0.8)"/>
+              <use href="#sym-tree-pine" x="0" y="5" transform="scale(1.15)"/>
+              <use href="#sym-tree-pine" x="-6" y="7" transform="scale(0.95)"/>
+              <use href="#sym-tree-pine" x="7" y="6" transform="scale(1.0)"/>
+            </g>
+
+            <!-- Reusable Deciduous Tree -->
+            <g id="sym-tree-deciduous">
+              <ellipse cx="0" cy="4.5" rx="4.5" ry="1.6" fill="rgba(0, 0, 0, 0.22)" />
+              <path d="M -0.8,1.5 Q -1,4 -0.6,5 L 0.6,5 Q 1,4 0.8,1.5 Z" fill="#3a2512"/>
+              <!-- Canopy (Cloud Shape) -->
+              <path d="M -5,0 C -6.5,-1.5 -6.5,-4 -5,-5.5 C -4,-6.5 -2,-7 0,-7 C 2,-7 4,-6.5 5,-5.5 C 6.5,-4 6.5,-1.5 5,0 C 4.5,0.5 3,1 0,1 C -3,1 -4.5,0.5 -5,0 Z" fill="url(#grad-deciduous)" stroke="#112b13" stroke-width="0.4"/>
+              <path d="M -3.5,-5 C -4.5,-6 -3,-7.2 -1.5,-7.2 C 0.5,-7.2 2,-6.5 2.5,-5.5 C 2,-4.5 1,-4.5 0,-4.5 C -1,-4.5 -2.5,-4 -3.5,-5 Z" fill="#6ba871" opacity="0.8"/>
+              <circle cx="-2.5" cy="-3.5" r="2" fill="#84c78b" opacity="0.6"/>
+            </g>
+
+            <!-- Deciduous Forest Cluster -->
+            <g id="sym-forest-deciduous">
+              <use href="#sym-tree-deciduous" x="-7" y="-5" transform="scale(0.85)"/>
+              <use href="#sym-tree-deciduous" x="7" y="-7" transform="scale(0.8)"/>
+              <use href="#sym-tree-deciduous" x="0" y="4" transform="scale(1.15)"/>
+              <use href="#sym-tree-deciduous" x="-6" y="6" transform="scale(0.95)"/>
+              <use href="#sym-tree-deciduous" x="6" y="5" transform="scale(1.0)"/>
+            </g>
+
+            <!-- Reusable Palm Tree -->
+            <g id="sym-tree-palm">
+              <ellipse cx="0" cy="7.5" rx="5.5" ry="1.8" fill="rgba(0, 0, 0, 0.22)" />
+              <path d="M -0.5,7.5 Q -2.2,2.5 -0.5,-6.5 Q 0.5,-6.5 -1.2,2.5 L -1.5,7.5 Z" fill="#52391b"/>
+              <path d="M -0.5,-7 Q -6,-8 -9,-5 Q -6,-4.5 -3,-5 Z" fill="url(#grad-palm)" stroke="#113014" stroke-width="0.2"/>
+              <path d="M -0.5,-7 Q -4,-11 -7,-14 Q -3.5,-10 -2,-8 Z" fill="url(#grad-palm)" stroke="#113014" stroke-width="0.2"/>
+              <path d="M -0.5,-7 Q 0.5,-12 4,-14 Q 2,-9 1,-7.5 Z" fill="url(#grad-palm)" stroke="#113014" stroke-width="0.2"/>
+              <path d="M -0.5,-7 Q 5,-10 9,-7 Q 5,-7 2.5,-6.5 Z" fill="url(#grad-palm)" stroke="#113014" stroke-width="0.2"/>
+              <path d="M -0.5,-7 Q 3,-4 7,-1 Q 3,-3.5 1,-4.5 Z" fill="url(#grad-palm)" stroke="#113014" stroke-width="0.2"/>
+              <path d="M -0.5,-7 Q -3.5,-4 -7,-2 Q -3.5,-2.5 -2.2,-4 Z" fill="url(#grad-palm)" stroke="#113014" stroke-width="0.2"/>
+            </g>
+
+            <!-- Jungle Palm Cluster -->
+            <g id="sym-jungle-palm">
+              <use href="#sym-tree-palm" x="-7" y="-4" transform="scale(0.9) rotate(-10)"/>
+              <use href="#sym-tree-palm" x="7" y="-6" transform="scale(0.85) rotate(15)"/>
+              <use href="#sym-tree-palm" x="0" y="4" transform="scale(1.1) rotate(5)"/>
+              <use href="#sym-tree-palm" x="-5" y="7" transform="scale(0.95) rotate(-5)"/>
+              <use href="#sym-tree-palm" x="6" y="6" transform="scale(1.0) rotate(8)"/>
+            </g>
+
+            <!-- Soft Ridge Hill -->
+            <g id="sym-hill">
+              <path d="M -16,8 Q 0,-6 16,8 Q 0,-3 -16,8" fill="url(#grad-hill-shadow)" opacity="0.35"/>
+              <path d="M -16,8 Q 0,-6 16,8" fill="none" stroke="#294519" stroke-width="1.8" stroke-linecap="round" opacity="0.45"/>
+              <path d="M -15,7.5 Q 0,-5.2 15,7.5" fill="none" stroke="#ffffff" stroke-width="0.8" stroke-linecap="round" opacity="0.25"/>
+            </g>
+
+            <!-- Art Deco City Outpost -->
+            <g id="sym-urban">
+              <ellipse cx="-3.5" cy="8.5" rx="8" ry="2.6" fill="rgba(0, 0, 0, 0.25)" />
+              <ellipse cx="3.5" cy="8.5" rx="8" ry="2.6" fill="rgba(0, 0, 0, 0.25)" />
+              
+              <!-- Central Spire -->
+              <rect x="-3" y="-12" width="6" height="20" fill="url(#grad-brick)" stroke="#301f19" stroke-width="0.4"/>
+              <polygon points="-3,-12 0,-18 3,-12" fill="url(#grad-brass)" stroke="#301f19" stroke-width="0.4"/>
+              <line x1="-1" y1="-8" x2="-1" y2="-4" stroke="#ffe8a3" stroke-width="0.6"/>
+              <line x1="1" y1="-8" x2="1" y2="-4" stroke="#ffe8a3" stroke-width="0.6"/>
+              
+              <!-- Left building -->
+              <rect x="-9.5" y="-3" width="7" height="11" fill="url(#grad-brick-dark)" stroke="#301f19" stroke-width="0.4"/>
+              <polygon points="-9.5,-3 -6,-8 -2.5,-3" fill="#693025" stroke="#301f19" stroke-width="0.4"/>
+              <rect x="-7.5" y="1" width="3" height="4" fill="#1c110e"/>
+              
+              <!-- Right building -->
+              <rect x="2.5" y="-1" width="7" height="9" fill="url(#grad-brick-light)" stroke="#301f19" stroke-width="0.4"/>
+              <polygon points="2.5,-1 6,-5 9.5,-1" fill="url(#grad-brass)" stroke="#301f19" stroke-width="0.4"/>
+              <circle cx="6" cy="2" r="1.2" fill="#ffe8a3"/>
+            </g>
+          </defs>
+          
+          <!-- Procedural Map Grid Connections, Regions, and Markers are dynamically drawn here -->
+          <g id="map-connections-layer"></g>
+          <g id="map-territories-layer"></g>
+          <g id="map-features-layer"></g>
+          <g id="map-selection-layer"></g>
+          <g id="map-rivers-layer"></g>
+          <g id="map-labels-layer"></g>
+          <g id="map-nodes-layer"></g>
+          <g id="map-units-layer"></g>
+        </svg>
+        
+        <!-- Overlay Map Navigation Controls -->
+        <div class="map-control-overlay">
+          <button class="map-btn" id="map-zoom-in" title="Zoom In">+</button>
+          <button class="map-btn" id="map-zoom-out" title="Zoom Out">-</button>
+          <button class="map-btn" id="map-zoom-reset" title="Reset View">&#8635;</button>
+        </div>
+      </div>
+
+      <!-- Action Panel Dashboard -->
+      <div id="dashboard">
+        
+        <!-- Dashboard Tabs Navigation -->
+        <nav class="dashboard-tabs">
+          <button class="tab-btn active" data-target="panel-territory">Territory</button>
+          <button class="tab-btn" data-target="panel-production">Production</button>
+          <button class="tab-btn" data-target="panel-doctrines">Doctrines</button>
+          <button class="tab-btn" data-target="panel-politics">Politics</button>
+          <button class="tab-btn" data-target="panel-hand">Hand</button>
+          <button class="tab-btn" data-target="panel-combat">Combat</button>
+        </nav>
+
+        <!-- Tab Content Panels -->
+        <div class="dashboard-content">
+          
+          <!-- Tab A: Territory Inspector (Dynamic context on node click) -->
+          <div id="panel-territory" class="panel-content active">
+            <div class="art-deco-frame" style="height: 100%;">
+              <span class="frame-title">Territory Intel</span>
+              <div id="territory-inspect-empty" style="text-align: center; color: var(--text-dim); margin-top: 50px;">
+                <p>Click a territory or outpost on the map to inspect its assets, garrison, and connection lines.</p>
+              </div>
+              <div id="territory-inspect-data" style="display: none;">
+                <h3 id="inspect-name" style="font-family: var(--font-display); color: var(--gold-primary); margin-bottom: 8px;">Territory Name</h3>
+                <div style="font-size: 0.85rem; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+                  <div>Faction: <span id="inspect-faction" style="font-weight: 700;">Neutral</span></div>
+                  <div>Terrain: <span id="inspect-terrain" style="font-weight: 600;">Plains</span></div>
+                  <div>Income Value: <span id="inspect-value" style="color: var(--color-gold);">0 Gold</span></div>
+                  <div>Resource Node: <span id="inspect-resource">-</span></div>
+                  <div>Supply Status: <span id="inspect-supply" style="color: var(--faction-green);">Traced</span></div>
+                </div>
+                
+                <h4 style="font-family: var(--font-display); font-size: 0.8rem; border-bottom: 1px solid var(--border-gold-dim); padding-bottom: 4px; margin-bottom: 6px;">Garrison Forces</h4>
+                <div id="inspect-garrison-list" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 15px;">
+                  <!-- Dynamically populated -->
+                </div>
+                
+                <div id="inspect-commander-container" style="display: none; background: rgba(0,0,0,0.3); padding: 8px; border: 1px solid var(--border-gold-dim); border-radius: 4px; margin-bottom: 15px;">
+                  <h4 style="font-family: var(--font-display); font-size: 0.8rem; color: var(--text-gold); margin-bottom: 4px;">Commanding Officer</h4>
+                  <div>Name: <span id="inspect-commander-name" style="font-weight: 700;">General</span></div>
+                  <div>Loyalty: <span id="inspect-commander-loyalty">10</span></div>
+                  <div>Trait: <span id="inspect-commander-trait" style="font-size: 0.75rem; color: var(--text-dim);">Combat bonus</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab B: Production Dashboard (Build Queue & Capital Upgrades) -->
+          <div id="panel-production" class="panel-content">
+            <div class="art-deco-frame">
+              <span class="frame-title">National Mobilization</span>
+              <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">
+                Recruit units at your Capital or occupied Factories. Production is capped by local factory limits.
+              </p>
+              <div style="font-size: 0.8rem; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>Active City Hub:</span>
+                <strong id="production-city-name" style="color: var(--gold-primary);">Berlin Core</strong>
+              </div>
+              <div style="font-size: 0.8rem; margin-bottom: 12px; display: flex; justify-content: space-between;">
+                <span>Mobilization Capacity:</span>
+                <span id="production-capacity">0 / 10 Units</span>
+              </div>
+              
+              <!-- Unit Roster Purchase List -->
+              <div class="unit-purchase-list" id="production-unit-list">
+                <!-- Dynamically populated from JS -->
+              </div>
+              
+              <button id="btn-purchase-finalize" class="btn-gold" style="width: 100%; margin-top: 15px;">Confirm Purchases</button>
+            </div>
+            
+            <div class="art-deco-frame">
+              <span class="frame-title">Industrial Capital Upgrades</span>
+              <div class="unit-purchase-list" id="production-upgrades-list">
+                <!-- Dynamically populated upgrades (Steelworks, Refineries, etc.) -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab C: Doctrines Tree (Civ 5 Policy Trees) -->
+          <div id="panel-doctrines" class="panel-content">
+            <div class="art-deco-frame">
+              <span class="frame-title">Strategic Doctrines</span>
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 10px;">
+                <span>Research Points:</span>
+                <strong id="doctrine-rp-value" style="color: var(--color-prestige);">0 RP</strong>
+              </div>
+              <div class="doctrines-list" id="doctrines-tree-container">
+                <!-- Dynamically populated from js/doctrines.js -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab D: Senate Bidding & Bribery (Politics) -->
+          <div id="panel-politics" class="panel-content">
+            <div class="art-deco-frame">
+              <span class="frame-title">The Grand Senate</span>
+              <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 8px;">
+                Bid Prestige to claim Senate Offices at the end of each round. Offices award powerful national bonuses.
+              </p>
+              <div class="senate-office-list" id="senate-offices-container">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+            
+            <div class="art-deco-frame">
+              <span class="frame-title">Commander Bribery Office</span>
+              <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 8px;">
+                Bribe neutral or enemy Commanders. If your bid exceeds their Loyalty, they will defect with their entire stacked army!
+              </p>
+              <div id="bribery-container" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Target Commander selection & bid sliders -->
+                <select id="bribery-commander-select" style="background: #252830; color: #fff; border: 1px solid var(--border-gold-dim); padding: 5px; font-size: 0.8rem; border-radius: 4px;">
+                  <option value="">Select Commander...</option>
+                </select>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 4px;">
+                  <span>Loyalty Rating:</span>
+                  <span id="bribery-loyalty-val">0</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
+                  <input type="number" id="bribery-bid-amount" min="1" value="5" style="background: #252830; color: #fff; border: 1px solid var(--border-gold-dim); padding: 4px; width: 60px; text-align: center; border-radius: 4px;">
+                  <span style="font-size: 0.75rem;">Prestige</span>
+                  <button id="btn-attempt-bribe" class="btn-gold" style="flex: 1; margin: 0;">Bribe Commander</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab E: Crown Cards Hand -->
+          <div id="panel-hand" class="panel-content">
+            <div class="art-deco-frame" style="height: 100%;">
+              <span class="frame-title">Crown Cards Hand</span>
+              <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">
+                Play Action Cards for localized tactical effects, or execute Senate edicts.
+              </p>
+              <div class="cards-hand-grid" id="cards-hand-container">
+                <!-- Dynamically populated from js/app.js -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab F: Combat Battle Board -->
+          <div id="panel-combat" class="panel-content">
+            <div class="art-deco-frame">
+              <span class="frame-title">Active Engagement</span>
+              <div class="combat-board-container">
+                
+                <!-- Attacker Box -->
+                <div class="combat-side">
+                  <div class="side-title side-attacker">Attacking Forces</div>
+                  <div class="combat-units-grid" id="combat-attacker-units">
+                    <!-- Loaded dynamically -->
+                  </div>
+                </div>
+
+                <!-- Defender Box -->
+                <div class="combat-side">
+                  <div class="side-title side-defender">Defending Forces</div>
+                  <div class="combat-units-grid" id="combat-defender-units">
+                    <!-- Loaded dynamically -->
+                  </div>
+                </div>
+
+                <!-- Roll Logging Panel -->
+                <div style="font-size: 0.8rem; font-weight: 700; margin-top: 5px;">Combat Ledger</div>
+                <div class="combat-roll-log" id="combat-log">
+                  Waiting for engagement to begin...
+                </div>
+
+                <!-- Tactical Card Application -->
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                  <button id="btn-combat-roll" class="btn-gold" style="flex: 1; margin: 0;">Fire Round</button>
+                  <button id="btn-combat-retreat" class="btn-gold" style="flex: 1; margin: 0; background: #4f3333; color: #ffb3b3;">Retreat</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- 3. FOOTER: Action Bar & Activity Log -->
+    <footer>
+      <div class="log-viewer" id="log-text">System Initialized. Awaiting commander orders...</div>
+      
+      <div class="action-bar">
+        <!-- Turn Phase Control State Engine -->
+        <button id="btn-phase-next" class="btn-gold">Advance Phase: Purchase</button>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Javascript Modules -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

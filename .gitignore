@@ -1,0 +1,24 @@
+# ---- Secrets & credentials (never commit) ----
+.env
+.env.*
+!.env.example
+*.credentials.json
+*.secret
+secrets/
+*.pem
+*.key
+
+# ---- Agent runtime state (local-only, never commit) ----
+.active_convo
+
+# ---- Dependencies & build output ----
+node_modules/
+dist/
+build/
+
+# ---- OS / editor noise ----
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~

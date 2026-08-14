@@ -1,0 +1,822 @@
+/* ==========================================================================
+   IRON & CROWNS - ART DECO DESIGN SYSTEM & STYLESHEET
+   Inspiration: Civilization V, Steampunk/Dieselpunk Grand Strategy
+   ========================================================================== */
+
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Inter:wght@300;400;500;700&display=swap');
+
+/* CSS Custom Properties (Theme Tokens) */
+:root {
+  /* Color Palette */
+  --bg-main: #0c0d0e;
+  --bg-panel: #15171a;
+  --bg-panel-overlay: rgba(21, 23, 26, 0.95);
+  --border-gold: #c5a059;
+  --border-gold-dim: #7d6537;
+  --gold-primary: #dfb76c;
+  --gold-light: #f5dfb3;
+  --text-main: #d5dadf;
+  --text-dim: #8fa0ac;
+  --text-gold: #e5c38c;
+  
+  /* Player/Faction Colors */
+  --faction-red: #c63b3b;     /* Imperium of Iron */
+  --faction-blue: #3b7dc6;    /* Alliance of Crowns */
+  --faction-green: #3bc67d;   /* Green Horde / Steppe Coalition */
+  --faction-purple: #8e3bc6;  /* Byzantium Combine */
+  
+  /* Resources colors */
+  --color-gold: #ffd700;
+  --color-prestige: #df73ff;
+  --color-oil: #ff5722;
+  --color-metal: #a0a0a0;
+  --color-wood: #8b5a2b;
+
+  /* Layout Constants */
+  --header-height: 55px;
+  --footer-height: 40px;
+  --font-display: 'Cinzel', serif;
+  --font-body: 'Inter', sans-serif;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Base Reset & Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body, html {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  height: 100vh;
+  overflow: hidden;
+  width: 100vw;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-gold-dim);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-gold);
+}
+
+/* ==========================================================================
+   ART DECO UI SHELL & GRID LAYOUT
+   ========================================================================== */
+
+#game-container {
+  display: grid;
+  grid-template-rows: var(--header-height) 1fr var(--footer-height);
+  height: 100vh;
+  width: 100vw;
+}
+
+/* --- HEADER PANEL --- */
+header {
+  align-items: center;
+  background: linear-gradient(to bottom, #1c1f24 0%, var(--bg-panel) 100%);
+  border-bottom: 2px solid var(--border-gold);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: relative;
+  z-index: 100;
+  height: var(--header-height);
+}
+
+/* Art Deco Header Border Ornaments */
+header::after {
+  background: var(--border-gold);
+  bottom: -4px;
+  content: '';
+  height: 1px;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.brand-title {
+  color: var(--gold-primary);
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(223, 183, 108, 0.3);
+}
+
+.faction-status-bar {
+  align-items: center;
+  display: flex;
+  gap: 20px;
+}
+
+.faction-badge {
+  align-items: center;
+  border: 1px solid var(--border-gold);
+  border-radius: 4px;
+  display: flex;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  gap: 8px;
+  padding: 4px 10px;
+}
+
+.faction-badge.active-red {
+  background: rgba(198, 59, 59, 0.15);
+  border-color: var(--faction-red);
+  color: var(--faction-red);
+}
+
+.faction-badge.active-blue {
+  background: rgba(59, 125, 198, 0.15);
+  border-color: var(--faction-blue);
+  color: var(--faction-blue);
+}
+
+/* Resources Display */
+.resources-container {
+  align-items: center;
+  display: flex;
+  gap: 15px;
+}
+
+.resource-item {
+  align-items: center;
+  display: flex;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  gap: 6px;
+}
+
+.resource-item i {
+  font-style: normal;
+}
+
+.res-gold { color: var(--color-gold); }
+.res-prestige { color: var(--color-prestige); }
+.res-oil { color: var(--color-oil); }
+.res-metal { color: var(--color-metal); }
+.res-wood { color: var(--color-wood); }
+
+.resource-value {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-gold-dim);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+
+.turn-counter {
+  color: var(--text-dim);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+}
+
+/* --- MAIN WORKSPACE --- */
+main {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* --- MAP VIEWPORT (LEFT) --- */
+#map-viewport {
+  background-color: #0b0d0f;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(20, 25, 30, 0.8) 0%, rgba(10, 12, 14, 0.95) 100%),
+    url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 0l40 40-40 40L0 40z' fill='%237d6537' fill-opacity='0.02' fill-rule='evenodd'/%3E%3C/svg%3E");
+  cursor: grab;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+#map-viewport:active {
+  cursor: grabbing;
+}
+
+#map-svg {
+  height: 100%;
+  transform-origin: 0 0;
+  width: 100%;
+}
+
+/* Territory Styling */
+.territory {
+  fill: #191c21;
+  stroke: #2e353f;
+  stroke-width: 1.5;
+  transition: fill var(--transition-fast), stroke var(--transition-fast);
+}
+
+.hex-cell {
+  filter: saturate(0.75) contrast(1.05) brightness(0.95);
+  transition: filter var(--transition-normal);
+}
+
+.territory:hover {
+  fill: #22272e;
+  stroke: var(--border-gold);
+}
+
+.territory.owned-red {
+  fill: rgba(198, 59, 59, 0.2);
+  stroke: rgba(198, 59, 59, 0.5);
+}
+.territory.owned-red:hover {
+  fill: rgba(198, 59, 59, 0.3);
+  stroke: var(--faction-red);
+}
+
+.territory.owned-blue {
+  fill: rgba(59, 125, 198, 0.2);
+  stroke: rgba(59, 125, 198, 0.5);
+}
+.territory.owned-blue:hover {
+  fill: rgba(59, 125, 198, 0.3);
+  stroke: var(--faction-blue);
+}
+
+/* Connections / Borders */
+.connection-line {
+  display: none;
+  stroke: rgba(125, 101, 55, 0.15);
+  stroke-dasharray: 4, 4;
+  stroke-width: 1;
+}
+
+.river-border {
+  display: none;
+  stroke: #2b455b;
+  stroke-width: 3.5;
+}
+
+/* Map UI Overlays */
+.map-control-overlay {
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  left: 20px;
+  position: absolute;
+  z-index: 10;
+}
+
+.map-btn {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-gold-dim);
+  border-radius: 4px;
+  color: var(--gold-primary);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  height: 32px;
+  transition: all var(--transition-fast);
+  width: 32px;
+}
+
+.map-btn:hover {
+  background: var(--border-gold-dim);
+  color: #fff;
+}
+
+/* Node Markers */
+.node-marker {
+  cursor: pointer;
+}
+
+.node-icon {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  transition: transform var(--transition-fast);
+}
+
+.node-marker:hover .node-icon {
+  transform: scale(1.15);
+}
+
+.territory-label {
+  fill: var(--text-dim);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  pointer-events: none;
+  text-anchor: middle;
+  text-shadow: 0 1px 4px #000;
+}
+
+/* --- DASHBOARD PANEL (RIGHT) --- */
+#dashboard {
+  background-color: var(--bg-panel);
+  border-left: 2px solid var(--border-gold);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+  display: grid;
+  grid-template-rows: 50px 1fr;
+  height: 100%;
+  overflow: hidden;
+  z-index: 20;
+}
+
+/* Dashboard Tabs */
+.dashboard-tabs {
+  background: #111215;
+  border-bottom: 1px solid var(--border-gold-dim);
+  display: flex;
+  overflow-x: hidden; /* Hide overflow scrollbar */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.dashboard-tabs::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(197, 160, 89, 0.15);
+  color: var(--text-dim);
+  cursor: pointer;
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 0.68rem; /* Slightly smaller text to fit perfectly */
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  min-width: 60px; /* Fit 6 tabs inside 400px width */
+  padding: 12px 2px;
+  text-transform: uppercase;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--gold-primary);
+}
+
+.tab-btn.active {
+  background: var(--bg-panel);
+  color: var(--gold-primary);
+  border-bottom: 2px solid var(--border-gold);
+  font-weight: 700;
+}
+
+/* Panel Body */
+.panel-content {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding: 15px;
+}
+
+.panel-content.active {
+  display: flex;
+}
+
+/* Decorative Art Deco Framing */
+.art-deco-frame {
+  border: 1px solid var(--border-gold-dim);
+  margin-bottom: 15px;
+  padding: 12px;
+  position: relative;
+}
+
+.art-deco-frame::before {
+  border: 1px solid var(--border-gold);
+  bottom: 2px;
+  content: '';
+  left: 2px;
+  pointer-events: none;
+  position: absolute;
+  right: 2px;
+  top: 2px;
+}
+
+.frame-title {
+  background: var(--bg-panel);
+  color: var(--gold-primary);
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  left: 15px;
+  letter-spacing: 1px;
+  padding: 0 8px;
+  position: absolute;
+  text-transform: uppercase;
+  top: -8px;
+}
+
+/* --- FOOTER PANEL --- */
+footer {
+  align-items: center;
+  background-color: #111215;
+  border-top: 1px solid var(--border-gold-dim);
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: relative;
+  z-index: 100;
+  height: var(--footer-height);
+}
+
+.log-viewer {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 65%;
+}
+
+.action-bar {
+  display: flex;
+  gap: 10px;
+  height: 100%;
+}
+
+/* Standard Art Deco Button */
+.btn-gold {
+  background: linear-gradient(to bottom, #d4af37 0%, #a6801c 100%);
+  border: 1px solid #000;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0,0,0,0.5);
+  color: #111;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 800;
+  height: 30px;
+  letter-spacing: 1px;
+  margin-top: 5px;
+  padding: 0 15px;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: all var(--transition-fast);
+}
+
+.btn-gold:hover {
+  background: linear-gradient(to bottom, #ffe875 0%, #d4af37 100%);
+}
+
+.btn-gold:active {
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.btn-gold:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+  text-shadow: none;
+}
+
+/* ==========================================================================
+   GAME COMPONENT STYLES (POLITICS, PRODUCTION, DOCTRINES, COMBAT)
+   ========================================================================== */
+
+/* Unit item displays */
+.unit-purchase-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.unit-row {
+  align-items: center;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(197, 160, 89, 0.15);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+}
+
+.unit-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.unit-name {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.unit-cost {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  margin-top: 2px;
+}
+
+.unit-controls {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.btn-qty {
+  background: #252830;
+  border: 1px solid var(--border-gold-dim);
+  color: var(--text-main);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  height: 24px;
+  width: 24px;
+}
+
+.btn-qty:hover {
+  background: var(--border-gold-dim);
+}
+
+.qty-val {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+  width: 20px;
+}
+
+/* Doctrines tree display */
+.doctrines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.doctrine-track {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(197, 160, 89, 0.1);
+  padding: 8px;
+}
+
+.doctrine-track-title {
+  color: var(--gold-primary);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.nodes-container {
+  display: flex;
+  gap: 8px;
+}
+
+.doctrine-node {
+  align-items: center;
+  background: #1e2229;
+  border: 1px solid var(--border-gold-dim);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: center;
+  padding: 6px 4px;
+  position: relative;
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.doctrine-node.locked {
+  opacity: 0.4;
+}
+
+.doctrine-node.active {
+  background: rgba(223, 183, 108, 0.1);
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 8px rgba(223, 183, 108, 0.25);
+}
+
+.doctrine-node-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.node-desc-tooltip {
+  background: var(--bg-panel-overlay);
+  border: 1px solid var(--border-gold);
+  border-radius: 4px;
+  bottom: 110%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  color: var(--text-main);
+  display: none;
+  font-size: 0.7rem;
+  left: 5%;
+  padding: 8px;
+  position: absolute;
+  width: 150px;
+  z-index: 50;
+}
+
+.doctrine-node:hover .node-desc-tooltip {
+  display: block;
+}
+
+/* Politics / Senate layout */
+.senate-office-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.office-card {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(197, 160, 89, 0.15);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.office-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.office-name {
+  color: var(--text-gold);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.office-holder {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.office-holder.holder-red { color: var(--faction-red); }
+.office-holder.holder-blue { color: var(--faction-blue); }
+
+.office-effect {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  margin: 4px 0;
+}
+
+.office-bid-controls {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.office-current-bid {
+  font-size: 0.75rem;
+}
+
+/* Cards Hand layout */
+.cards-hand-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.crown-card {
+  background: linear-gradient(135deg, #1c2027 0%, #111317 100%);
+  border: 1px solid var(--border-gold-dim);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 120px;
+  justify-content: space-between;
+  padding: 8px;
+  position: relative;
+  transition: all var(--transition-fast);
+}
+
+.crown-card::before {
+  border: 1px solid rgba(197, 160, 89, 0.15);
+  bottom: 2px;
+  content: '';
+  left: 2px;
+  position: absolute;
+  right: 2px;
+  top: 2px;
+}
+
+.crown-card:hover {
+  border-color: var(--gold-primary);
+  transform: translateY(-2px);
+}
+
+.card-type {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.card-type.action { color: #4fc3f7; }
+.card-type.office { color: #ffb74d; }
+.card-type.event { color: #e57373; }
+
+.card-name {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.card-description {
+  color: var(--text-dim);
+  font-size: 0.65rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* Combat / Battle board */
+.combat-board-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.combat-side {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(197, 160, 89, 0.1);
+  padding: 8px;
+}
+
+.side-title {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.side-title.side-attacker { color: var(--faction-red); }
+.side-title.side-defender { color: var(--faction-blue); }
+
+.combat-units-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.combat-unit-cell {
+  align-items: center;
+  background: #1a1e24;
+  border: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  flex-direction: column;
+  padding: 4px 2px;
+  text-align: center;
+}
+
+.combat-unit-icon {
+  font-size: 1.1rem;
+}
+
+.combat-unit-name {
+  font-size: 0.6rem;
+  font-weight: 600;
+  margin: 2px 0;
+}
+
+.combat-unit-qty {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.combat-roll-log {
+  background: #090a0c;
+  border: 1px solid var(--border-gold-dim);
+  color: var(--text-dim);
+  font-family: monospace;
+  font-size: 0.7rem;
+  height: 80px;
+  overflow-y: auto;
+  padding: 5px;
+}
