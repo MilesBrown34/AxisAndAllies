@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HexWorld — Real-World Hex Map Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; overflow: hidden; background: #0b1d33; }
+  body { font: 13px/1.45 "Segoe UI", system-ui, sans-serif; color: #dce6f2; }
+  #map, #map canvas { position: absolute; inset: 0; touch-action: none; }
+  .card {
+    position: absolute; background: rgba(10, 22, 38, 0.88); border: 1px solid #2a4a6e;
+    border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(3px);
+  }
+  #controls { top: 12px; left: 12px; width: 230px; }
+  #controls h1 {
+    font-size: 15px; letter-spacing: 0.5px; color: #f0c96a; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .ghost-btn {
+    background: none; border: none; color: #9db4cc; font-size: 15px; line-height: 1;
+    padding: 4px 8px; cursor: pointer; display: none;
+  }
+  .ghost-btn:hover { border: none; color: #f0c96a; }
+  .row { margin: 8px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  input[type=range] { flex: 1; accent-color: #f0c96a; }
+  input[type=number] {
+    width: 64px; background: #10263f; color: #dce6f2; border: 1px solid #2a4a6e;
+    border-radius: 4px; padding: 3px 6px;
+  }
+  button {
+    background: #10263f; color: #dce6f2; border: 1px solid #2a4a6e; border-radius: 4px;
+    padding: 4px 10px; cursor: pointer; font: inherit;
+  }
+  button:hover { border-color: #f0c96a; }
+  button.active { background: #f0c96a; color: #10263f; font-weight: 600; }
+  select {
+    background: #10263f; color: #dce6f2; border: 1px solid #2a4a6e; border-radius: 4px;
+    padding: 4px 8px; font: inherit; flex: 1; min-width: 0;
+  }
+  .adv-btn { width: 100%; text-align: left; background: none; border: none; color: #9db4cc; padding: 2px 0; }
+  .adv-btn:hover { border: none; color: #f0c96a; }
+  #advanced { border-left: 2px solid #1c3350; padding-left: 8px; margin: 4px 0; }
+  .hint { color: #6f87a3; font-size: 11px; margin-top: 6px; }
+  #stats { left: 12px; bottom: 12px; right: auto; max-width: 70vw; font-size: 12px; }
+  #stats b { color: #f0c96a; }
+  #stats .chips { color: #9db4cc; margin-top: 3px; }
+  #panel { top: 12px; right: 12px; width: 250px; }
+  #panel h2 { font-size: 14px; color: #f0c96a; }
+  #panelSub { color: #9db4cc; font-size: 12px; margin: 4px 0 8px; }
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  #log { max-height: 180px; overflow-y: auto; font-size: 11px; color: #9db4cc; }
+  #log div { border-top: 1px solid #1c3350; padding: 3px 0; }
+  #legend { right: 12px; bottom: 12px; max-width: 190px; max-height: 42vh; overflow-y: auto; }
+  #legend h2 {
+    font-size: 13px; color: #f0c96a; margin-bottom: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  #legend.folded #legendRows { display: none; }
+  #legend.folded h2 { margin-bottom: 0; }
+  .lg-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 3px 0; }
+  .lg-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #081221; flex: none; }
+  .lg-count { color: #6f87a3; margin-left: auto; padding-left: 10px; }
+  #tooltip {
+    position: absolute; pointer-events: none; background: rgba(10, 22, 38, 0.95);
+    border: 1px solid #f0c96a; border-radius: 5px; padding: 5px 9px; font-size: 12px;
+    z-index: 10; white-space: nowrap;
+  }
+  #tooltip .tt-country { color: #f0c96a; font-weight: 600; }
+  .hidden { display: none; }
+  #bottombar { display: none; }
+
+  /* ---- responsive: touch ergonomics (Material 3 target sizing) ---- */
+  @media (pointer: coarse) {
+    button { min-height: 44px; padding: 6px 12px; }
+    .ghost-btn { min-height: 0; }
+    input[type=range] { height: 30px; }
+    select { min-height: 44px; }
+    body { font-size: 14px; }
+  }
+
+  /* ---- mid (foldable inner / small tablet): slimmer, collapsible cards ---- */
+  @media (max-width: 900px) {
+    #controls { width: 210px; padding: 8px 10px; }
+    .ghost-btn { display: inline-block; }
+    #controls.collapsed .row, #controls.collapsed .hint { display: none; }
+    #controls.collapsed #advanced { display: none; }
+    #panel { width: 220px; max-width: 46vw; }
+    #stats { font-size: 11px; max-width: 55vw; }
+    #legend { max-width: 172px; }
+  }
+
+  /* ---- phone (Fold cover down to ~340px): bottom bar + bottom sheets ---- */
+  @media (max-width: 600px) {
+    #bottombar {
+      display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      gap: 8px; align-items: center;
+      padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+      background: rgba(8, 16, 28, 0.92); border-top: 1px solid #2a4a6e;
+      backdrop-filter: blur(6px);
+    }
+    #tbStats {
+      flex: 1; min-width: 0; font-size: 11px; color: #9db4cc;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    #controls, #legend {
+      /* sheets ride ABOVE the bottom bar so its buttons stay tappable while open */
+      position: fixed; left: 0; right: 0; top: auto; z-index: 30;
+      bottom: calc(62px + env(safe-area-inset-bottom));
+      width: auto; max-width: none; max-height: 66dvh; overflow-y: auto; margin: 0;
+      border-radius: 14px 14px 0 0; border-left: none; border-right: none;
+      padding: 10px 16px 14px;
+      transform: translateY(calc(105% + 80px)); transition: transform 0.22s ease;
+    }
+    #controls::before, #legend::before {
+      content: ""; display: block; width: 44px; height: 4px; border-radius: 2px;
+      background: #2a4a6e; margin: 0 auto 10px;
+    }
+    #controls.open, #legend.open { transform: translateY(0); }
+    /* the sheet always shows its full contents, whatever the mid-size collapse state */
+    #controls.collapsed .row { display: flex; }
+    #controls.collapsed .hint { display: block; }
+    #controls.collapsed #advanced:not(.hidden) { display: block; }
+    #legend.folded #legendRows { display: block; }
+    #stats { display: none; }
+    #panel {
+      top: auto; left: 8px; right: 8px; width: auto; z-index: 25;
+      bottom: calc(66px + env(safe-area-inset-bottom));
+      max-height: 40dvh; overflow-y: auto;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="controls" class="card">
+  <h1><span>⬡ HEXWORLD</span><button id="controlsToggle" class="ghost-btn" aria-label="Toggle controls">▾</button></h1>
+  <div class="row">
+    <label for="seedSlider">Seed <b id="seedVal">1</b></label>
+    <input id="seedSlider" type="range" min="1" max="10" step="1" value="1">
+  </div>
+  <div class="row">
+    <label for="seedInput">Custom</label>
+    <input id="seedInput" type="number" value="1" min="0" step="1">
+  </div>
+  <div class="row" id="modeBtns">
+    <button data-mode="earth" class="active">Earth</button>
+    <button data-mode="proc">Procedural</button>
+  </div>
+  <div class="row hidden" id="themeRow">
+    <label for="themeSel">Theme</label>
+    <select id="themeSel"></select>
+  </div>
+  <div class="row hidden" id="continentRow">
+    <label for="continentSlider">Continents <b id="continentVal">4</b></label>
+    <input id="continentSlider" type="range" min="1" max="7" step="1" value="4">
+  </div>
+  <div class="row hidden" id="oceanRow">
+    <label for="oceanSlider">Ocean <b id="oceanVal">65</b>%</label>
+    <input id="oceanSlider" type="range" min="30" max="90" step="1" value="65">
+  </div>
+  <div class="row hidden" id="advHead">
+    <button id="advToggle" class="adv-btn">▸ Advanced</button>
+  </div>
+  <div id="advanced" class="hidden">
+    <div class="row" id="warpRow">
+      <label for="warpSlider">Warp <b id="warpVal">60</b></label>
+      <input id="warpSlider" type="range" min="0" max="150" step="5" value="60">
+    </div>
+    <div class="row" id="minLakeRow">
+      <label for="minLakeSlider">Min lake <b id="minLakeVal">3</b></label>
+      <input id="minLakeSlider" type="range" min="1" max="8" step="1" value="3">
+    </div>
+    <div class="row" id="mountainRow">
+      <label for="mountainSlider">Mountains <b id="mountainVal">100</b>%</label>
+      <input id="mountainSlider" type="range" min="25" max="200" step="5" value="100">
+    </div>
+    <div class="row" id="rainRow">
+      <label for="rainSlider">Rainfall <b id="rainVal">100</b>%</label>
+      <input id="rainSlider" type="range" min="25" max="200" step="5" value="100">
+    </div>
+    <div class="row" id="aridRow">
+      <label for="aridSlider">Aridity <b id="aridVal">100</b>%</label>
+      <input id="aridSlider" type="range" min="0" max="200" step="5" value="100">
+    </div>
+    <div class="row" id="riverRow">
+      <label for="riverSlider">Rivers <b id="riverVal">10</b>%</label>
+      <input id="riverSlider" type="range" min="2" max="25" step="1" value="10">
+    </div>
+    <div class="row" id="honestRow">
+      <label for="honestSlider">River honesty <b id="honestVal">100</b>%</label>
+      <input id="honestSlider" type="range" min="50" max="100" step="5" value="100">
+    </div>
+    <div class="row" id="seaRow">
+      <label for="seaSlider">Sea offset <b id="seaVal">0.0</b>%</label>
+      <input id="seaSlider" type="range" min="-50" max="50" step="5" value="0">
+    </div>
+  </div>
+  <div class="row" id="sizeBtns">
+    <button data-size="coarse">Coarse</button>
+    <button data-size="medium" class="active">Medium</button>
+    <button data-size="fine">Fine</button>
+  </div>
+  <div class="row" id="nodeBtns">
+    <label>Node</label>
+    <button data-node="0" class="active">1 hex</button>
+    <button data-node="1">7</button>
+    <button data-node="2">19</button>
+  </div>
+  <div class="hint">drag to pan · wheel / pinch to zoom · click a hex</div>
+</div>
+
+<div id="stats" class="card">generating…</div>
+
+<div id="panel" class="card hidden">
+  <h2 id="panelTitle"></h2>
+  <div id="panelSub"></div>
+  <div class="actions">
+    <button data-act="Deploy Army">⚔ Deploy Army</button>
+    <button data-act="Build">⛏ Build</button>
+    <button data-act="Scout">☀ Scout</button>
+  </div>
+  <div id="log"></div>
+</div>
+
+<div id="legend" class="card hidden">
+  <h2 id="legendHead"><span>Legend</span><span id="legendChev">▾</span></h2>
+  <div id="legendRows"></div>
+</div>
+
+<div id="bottombar">
+  <button id="btnWorld">⚙ World</button>
+  <button id="btnLegend">▤ Legend</button>
+  <span id="tbStats">generating…</span>
+</div>
+
+<div id="tooltip" class="hidden"></div>
+
+<script>/*__PIXI__*/</script>
+<script>/*__DATA__*/</script>
+<script>/*__CORE__*/</script>
+<script>/*__PROCGEN__*/</script>
+<script>/*__APP__*/</script>
+</body>
+</html>

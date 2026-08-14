@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HexWorld v2 — Geologic World Generation Spec</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: #0b1d33; color: #dce6f2;
+    font: 15px/1.6 "Segoe UI", system-ui, sans-serif;
+    padding: 0 16px 80px;
+  }
+  main { max-width: 880px; margin: 0 auto; }
+  header { padding: 44px 0 10px; border-bottom: 2px solid #f0c96a; margin-bottom: 30px; }
+  h1 { color: #f0c96a; font-size: 28px; letter-spacing: 0.5px; }
+  .sub { color: #9db4cc; margin-top: 6px; font-size: 14px; }
+  h2 {
+    color: #f0c96a; font-size: 20px; margin: 42px 0 12px;
+    border-bottom: 1px solid #2a4a6e; padding-bottom: 6px;
+  }
+  h3 { color: #dce6f2; font-size: 16px; margin: 22px 0 8px; }
+  p { margin: 10px 0; }
+  a { color: #7db8ff; }
+  ul, ol { margin: 10px 0 10px 24px; }
+  li { margin: 5px 0; }
+  code {
+    background: #10263f; border: 1px solid #22405f; border-radius: 4px;
+    padding: 1px 5px; font: 13px/1.5 ui-monospace, Consolas, monospace;
+  }
+  pre {
+    background: #081221; border: 1px solid #2a4a6e; border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; margin: 14px 0;
+    font: 12.5px/1.55 ui-monospace, Consolas, monospace; color: #b8cce0;
+  }
+  .card {
+    background: rgba(10, 22, 38, 0.88); border: 1px solid #2a4a6e;
+    border-radius: 8px; padding: 14px 18px; margin: 14px 0;
+  }
+  .chat { border-left: 4px solid #2a4a6e; }
+  .chat .who { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .chat.friend .who { color: #e06c75; }
+  .chat.art { border-left-color: #f0c96a; }
+  .chat.art .who { color: #f0c96a; }
+  .chat p { margin: 6px 0; color: #c6d6e6; }
+  .decision { border-left: 4px solid #f0c96a; }
+  .decision .q { font-weight: 600; color: #dce6f2; }
+  .opt { margin: 8px 0 8px 14px; color: #9db4cc; }
+  .opt.chosen { color: #dce6f2; }
+  .opt.chosen::before { content: "✔ "; color: #7ee787; font-weight: 700; }
+  .opt:not(.chosen)::before { content: "○ "; color: #4a6688; }
+  .tag {
+    display: inline-block; background: #10263f; border: 1px solid #f0c96a55;
+    color: #f0c96a; border-radius: 20px; padding: 1px 10px; font-size: 12px; margin: 2px 3px 2px 0;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+  th, td { border: 1px solid #2a4a6e; padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: #10263f; color: #f0c96a; }
+  tr:nth-child(even) td { background: rgba(16, 38, 63, 0.4); }
+  .procon { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0; }
+  .procon div { background: #081221; border-radius: 6px; padding: 10px 12px; font-size: 13.5px; }
+  .procon .pro { border-left: 3px solid #7ee787; }
+  .procon .con { border-left: 3px solid #e06c75; }
+  .procon b { display: block; margin-bottom: 4px; }
+  .pro b { color: #7ee787; } .con b { color: #e06c75; }
+  .muted { color: #9db4cc; font-size: 13px; }
+  .toc { columns: 2; font-size: 14px; }
+  footer { margin-top: 60px; border-top: 1px solid #2a4a6e; padding-top: 14px; color: #6f87a3; font-size: 12.5px; }
+  @media (max-width: 640px) { .procon, .toc { columns: 1; grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>⬡ HexWorld v2 — Geologic World Generation</h1>
+  <div class="sub">Design spec · 2026-08-04 · builds on the <a href="../index.html">HexWorld demo</a> ·
+  status: <b style="color:#7ee787">complete — Milestones 1–7 shipped (tectonic worlds, six themes, packaged)</b></div>
+</header>
+
+<p>This is the working spec for the next iteration of the HexWorld generator: moving from
+"which country polygon is this hex in" / "Gaussian blob continents" to a <b>geologically
+plausible procedural world</b> — real elevation with a true sea level, climate with rain
+shadows, rivers that flow from sources to mouths (or die honestly in deserts), biomes,
+themes, and a legend. It exists because of the conversation below.</p>
+
+<div class="card" style="border-color:#7ee78766">
+<h3 style="margin-top:0">⚒ Build progress (updated 2026-08-04 — M7 handoff, arc complete)</h3>
+<p><b>Live now at <a href="../index.html">/labs/hexworld/</a>:</b> the Earth | Procedural mode
+toggle. Procedural mode has every cell as real data (ocean included), signed elevation with
+<b>sea level as a true percentile zero</b> (the Ocean&nbsp;% slider delivers the exact land
+fraction on every seed), a <b>Continents slider (1–7)</b> where the requested number of
+prominent, separated continents actually materializes (regression-tested), per-continent
+<b>characters</b> (Alpine / Frozen / Arid / Temperate / Lush / Plains — relief acts today,
+climate activates in M2), landmasses labeled by flood-fill (no more Voronoi seams),
+speck-island culling, a hypsometric palette with a live legend, and 28 deterministic tests.</p>
+<p><b>M2 Climate (landed 2026-08-04):</b> every hex now carries <b>temperature</b>
+(latitude insolation minus a mountain lapse rate) and <b>rainfall</b> from a wind-ordered
+moisture sweep — parcels evaporate over ocean, rain out over land, and dump on windward
+slopes with a 60/40 leeward carry, so <b>rain shadows and ~28° desert belts are emergent</b>,
+not painted. Trade winds / westerlies / polar easterlies flip by latitude belt. Land is
+labeled by a <b>Whittaker-style biome table</b> (11 biomes: ice cap → tundra → taiga →
+steppe → desert → forests → savanna → jungle, plus alpine above the treeline) with a
+nearest-point fallback and maritime coastal moderation; the legend and inspector show
+biome, °C and rain per hex. The continent <b>characters finally act on climate</b>: a
+Frozen continent renders as an ice cap with a tundra fringe, Arid reads tan, Lush deep
+green. Two fun bugs the tests caught: subsidence that only scales rain <i>defers</i> it
+instead of removing it (the desert belt never formed until descending air actually drank
+the column dry), and fBm surface roughness was orographically bleeding parcels dry within
+~5 cells (every interior turned desert) until sub-range bumps stopped counting as uplift.
+49 deterministic tests.</p>
+<p><b>M2.5 gate feedback (2026-08-04):</b> a <b>Warp slider (0–150)</b> — 0 gives round
+noise blobs, 150 craggy fjord-land (the requested continent count is guaranteed through
+110; beyond that heavy warp can merge continents into a Pangaea, on purpose); a
+<b>sea-breeze lushness pass</b> (rainfall ×1.35 on shoreline hexes, ×1.17 one ring in —
+green coasts, deserts pushed inland; land mix now ~20% desert / 38% grassland / 34%
+forest); and a <b>responsive mobile UI</b> — on phones the map is full-bleed with a
+bottom bar and bottom-sheet controls/legend, on foldables the cards collapse to pills,
+touch targets are 44px+, breakpoints down to 340px-wide screens.</p>
+<p><b>M3 Hydrology (landed 2026-08-04):</b> rivers are real now — and they flow along hex
+<b>edges</b>, not through cell centers. Every corner of the hex grid is a junction; a
+priority-flood pass (the standard terrain-hydrology trick) finds the water surface, each
+junction gets one seeded downhill outflow, and the M2 <b>rainfall field feeds flow
+accumulation</b> down those chains. The top slice of flux becomes rivers with <b>width ∝
+√flux</b>, so tributaries visibly join into trunks, and because junctions ARE coastline
+vertices, every river ends at a genuine mouth on the coast — or dies honestly inland:
+closed basins run an <b>evaporation check</b> (inflow vs lake area), and a starved basin
+becomes an endorheic <b>salt lake</b> or a dry <b>salt flat</b> — the "river dies in the
+desert" ask, verbatim. Open basins overflow at the rim and the river continues. Cold high
+peaks now carry <b>snowcaps</b> above the lapse-rate snowline. The inspector shows per-hex
+flux; the legend gains Lake and Salt Flat; stats count rivers reaching a mouth. All of it
+is deterministic per seed (the only randomness is a positional hash per junction for how
+rivers wander) — 66 tests.</p>
+<p><b>M4 Refine + reject (landed 2026-08-04):</b> the maps clean up after themselves now.
+Biome boundaries are <b>dithered</b> — a positional jitter on each hex's (temperature,
+rainfall) before classification — so the ruler-straight banding lines dissolve into
+organic transitions. Then a <b>Potts/MRF relaxation</b> (a few ICM sweeps over a
+designer-editable <b>biome-affinity matrix</b>) absorbs single-hex speckle and buffers
+climate whiplash like desert kissing jungle, while a climate-fit anchor term makes sure
+<b>rain shadows survive the polish</b> (regression-tested). And the "many seeds unusable"
+complaint dies by construction: every generated world must pass a quality floor (enough
+rivers reaching a mouth, enough distinct biomes, the requested continents actually
+present) — a failing seed silently retries seed+1 and the stats bar <b>says exactly why</b>
+("seed N rejected: only 2 river mouths…"). From the M3 feedback round: a <b>Min-lake
+slider (1–8)</b> — basins that flood fewer hexes than the dial never pool, so the 1-hex
+speck ponds are gone at the default of 3 (slide to 1 to get them back); starved specks
+still kill their river, they just don't leave a pan. Warp keeps its full 0–150 range —
+the Pangaea zone past 110 stays, and the seed validator knows to stand down there.
+83 tests.</p>
+<p><b>M5 Themes + Advanced drawer (landed 2026-08-04):</b> the world generator grew
+<b>six personalities</b>. A Theme picker on the main bar — <b>Terran</b> (the Earthlike
+default, byte-identical to what you saw yesterday), <b>Pangaea</b> (one supercontinent
+with a dry endorheic heart), <b>Shattered Archipelago</b> (a dozen-plus island masses),
+<b>Dune</b> (a desert planet where the rare lakes render as <b>oases</b> and rivers are
+allowed to be scarce), <b>Glacial</b> (an ice age: lowered sea level opens land bridges,
+meltwater lakes, huge caps) and <b>Primordial</b> (young, jagged, wet — its peaks re-skin
+as <b>Volcanic Peaks</b> until real plate margins arrive in M6). Each theme is a bundle:
+dial defaults + a whole-world climate character + a palette re-skin + <b>its own
+acceptance rules</b> — a Dune world is allowed to be river-poor, an Archipelago world
+MUST actually shatter, and every theme hashes the seed into <b>its own seed universe</b>
+(same seed number, six different planets — same hex lattice though, which is a nice
+determinism party trick). Below the main bar, the <b>Advanced drawer</b>: Warp, Min
+lake, <b>Mountains</b> (a vertical-exaggeration curve on land elevation — raw
+amplitude turned out to be eaten by normalization, a fun probe), <b>Rainfall ×</b>,
+<b>River density</b>, <b>River honesty</b> (width ∝ √flux is the honest truth; slide
+down to flatter minor rivers — selection was already honest by construction, a monotone
+transform can't change a percentile cut), and a <b>sea-level fine offset</b>. Picking a
+theme re-seats every dial to its envelope; any dial you touch afterwards overrides the
+theme. Gate call: <b>Continents stays on the main bar</b> next to Ocean — they're the
+two levers that define a world. 98 tests.</p>
+<p><b>M6 Tectonics (landed 2026-08-04):</b> the placeholder continent masks are gone —
+worlds are now made by <b>supercontinent breakup</b>. One landmass grows in pre-drift
+"plate space", cracks along a shared meandering rift network, and the fragments drift
+apart on the wrapped map; because both sides of every rift are cut by the <b>same
+crack curve</b>, facing coastlines are conjugate — they visibly <i>fit</i>, the
+"once-connected" look from the original brief. Fragments carry real plate anatomy:
+<b>leading edges are active margins</b> (a coastal mountain arc with a deep-ocean
+trench offshore, Andes-style) and rifted/trailing edges are <b>passive margins</b>
+(wide shallow shelf seas, Atlantic-style) — look for the pale shelf halos vs the
+dark trench bands. Active margins unlock the first genuinely new biome since the
+climate engine: <b>Volcanic</b> — dark basalt-red cells where subduction coasts rise
+high, in the legend whenever a world has them. <b>Primordial</b> now uses the real
+thing (its alpine re-skin is retired; it ships as a just-broken 3-fragment world,
+leading edges ablaze), and <b>Pangaea has zero volcanoes by construction</b> — no
+drift, no subduction. Crowded worlds (6–7 continents) get a barely-drifted young
+rift instead of wide oceans — there is genuinely no room on the cylinder, which is
+its own kind of world. The Continents slider is now literally the fragment count.
+Getting the "requested continents actually materialize" guarantee to survive real
+plate mechanics took seven probed mechanism fixes (drift must be a uniform
+expansion; rotation needs drift room; wiggle the crack <i>distance</i>, never the
+Voronoi domain…) — the kind of fight you only win with a regression suite.
+112 tests, zero rejected seeds across all six themes × seeds 1–10.</p>
+<p><b>M7 Package &amp; handoff (landed 2026-08-04):</b> the wrap-up milestone. The lab's
+doc set (README, agent instructions, design spec) was rewritten to describe the real
+M1–M6 engine — the pipeline map, every dial, the determinism contract, the headless QA
+hooks, and the hard-won gotchas — framed as a <b>standalone folder</b> that runs from any
+static host or straight off disk. Size budget confirmed: the whole world generator ships
+in a single <b>1.02MB</b> <code>index.html</code> (budget 1.3MB), zero runtime requests.
+Final QA passed headlessly in both modes.</p>
+<p><b>Post-release: the Aridity dial (2026-08-05):</b> a new Advanced-drawer slider for
+"less desert, more Hawaiian islands". It scales the two mechanisms that MAKE deserts —
+the horse-latitude subsidence belt (both the rain suppression and the column drain) and
+the Arid continent-character intensity — so <b>0%</b> gives lush island-jungle worlds
+(terran desert share drops ~16% → ~3% of land) and <b>200%</b> deepens hyper-desert.
+Rain-shadow deserts stay at every setting: the dry leeward Kona side of a volcanic
+island is earned by the wind model, not painted. Pairs naturally with Shattered
+Archipelago + a nudge of Rainfall. 119 tests.</p>
+<p class="muted">That's a wrap — v2 shipped, Milestones 1–7 complete. Everything beyond
+(spherical projection, erosion, seasons…) stays deliberately parked until there's a new spec.</p>
+</div>
+
+<h2 id="origin">1 · How this started</h2>
+
+<div class="card chat friend">
+  <div class="who">Spyder001</div>
+  <p>Heres the next challenge. Although I don't think I want it for My game at least right
+  away but it was on my mind. Trying to get it to create a living Geologic/Ecologic system
+  — <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=79814583">[the Civ5 "PerfectWorld" mod]</a></p>
+  <p><a href="https://milesbrown34.github.io/hex-world-generator/">[his procedural hex-world generator]</a>
+  — This is a more procedural one. I am.. not happy with where it is but its a start if that helps you</p>
+  <p>It needs fine tuning. The land masses get too.. diffuse and the continent placement i
+  defined as using a SQl join command but it makes weird continents. On top of that i would
+  like a filter for the seeds. Many options IMO are unusable. It would be nice to get it
+  more fine tuned so extreme results were less likely</p>
+  <p>It supposedly has a generation algorithm that also creates realistic mountains / rivers
+  forest deserts as well. But I think for the moment thats too complicated for what im working on.</p>
+</div>
+
+<p class="muted">Spyder001's generator was built (with his Gemini agent) on top of the
+standalone HexWorld package — it reuses the hex geometry/render layer and replaces the
+real-Earth country lookup with simplex noise + Gaussian continent attractors.</p>
+
+<h3>Art's brief (verbatim — this is the prompt that produced this spec)</h3>
+
+<div class="card chat art">
+  <div class="who">Tekka Takeda (Art)</div>
+  <p>My idea for the next iteration of what you, Claude, came up with would basically be more
+  specific parameters for the algorithm to help consistently shape each world seed.</p>
+  <p>Via observation we know a few things that aren't working like we want it to, such as
+  continent generation being kind of wonky. The jurisdiction between entities like bodies of
+  water, mountains, etc are not representative of how those would actually be allocated
+  across a world (assuming Earth like properties). Likely can create an adjacency
+  relationship with probability to spawn X, Y, Z based on the properties of the central
+  node/hex cluster.</p>
+  <p>Sea level specifically is not exactly respecting natural boundaries of land and objects,
+  likely due to no "sea level" or set zero value for elevation. Pretty start on that though.</p>
+  <p>No dedicated "biomes" or "themed" world properties yet to further shape the seed.</p>
+  <p>Please research the formation of the Earth itself, study seed generation algorithms for
+  games like No Man's Sky, Minecraft, and other games to find strong principles shared
+  between them, and provide it with parameters such as:</p>
+  <p>— Utilize a node data structure with a probability model (retrieve the top 3 most
+  appropriate models, make a recommendation, and provide a pro/con list for me to make the
+  most educated decision) for determining adjacent/neighboring node/hex cluster. Proximity
+  between nodes that are &gt;1 distance should have a logarithmic drop in affect.</p>
+  <p>— Ensure geographical entities retain real, practical form. Example: Rivers should be
+  sourced from things like snow and rainfall, subterranean sources, or streams and should
+  primarily have a mouth. If a river is flowing to a desert it may eventually end due to
+  evaporation or feed into the earth in a valley ending it's run.</p>
+  <p>— When generating mountains remember it's affects in surrounding entities such as it's
+  barrier effect of wind, sunlight, moisture.</p>
+  <p>— Utilize a multi layer approach to creating the world with different elevation levels.
+  Land can host water above it. Mountains can host snow. These effects should be part of the
+  algorithm.</p>
+  <p>— We also need a legend for what each color represents regarding geological entities.</p>
+  <p>— Determine a number of world "themes" to follow and explain how they might affect the
+  generation of each world. Perhaps each "theme" will have its own subset of seeds.</p>
+  <p>This idea was spawned from an old Civilization 4 and 5 mod. Please make any
+  recommendations on achieving great results. The maps and continental land mass shapes do
+  not have to resemble current Earth, but they should make sense in terms of how each land
+  mass may have been connected to another at some point in the history of its creation.</p>
+  <p>Lastly, utilize the Hex World demo project and simply build upon it with these new
+  sliders. The visual representation and level of interactivity was exceptional!</p>
+</div>
+
+<h2 id="diagnosis">2 · What we diagnosed in the current procedural generator</h2>
+
+<p>We read the deployed generator's source. It's a solid foundation (seeded simplex noise,
+domain warping, seamless east–west wrap), and every symptom Spyder001 noticed traces to a
+specific, fixable root cause:</p>
+
+<table>
+<tr><th>Symptom</th><th>Root cause</th><th>Fix in v2</th></tr>
+<tr><td>"Sea level doesn't respect boundaries"; slider feels random</td>
+<td>Sea level is an <b>absolute threshold on an unnormalized field</b>, fighting random
+continent-attractor strengths (0.35–0.80 vs a 0.35 default threshold)</td>
+<td><b>Percentile sea level</b>: sort elevations, cut at the Ocean&nbsp;% dial → exact land
+fraction on every seed, and elevation becomes <b>signed with a true zero</b></td></tr>
+<tr><td>"Weird continents" / straight borders through one landmass</td>
+<td>Continent identity = <b>Voronoi cell of the nearest attractor</b>, computed independently
+of the actual landmass (the "SQL join" comment in the code is this additive-attractor blend)</td>
+<td>Label landmasses by <b>flood fill of connected land</b>; in v2 continents are drifted
+fragments of one supercontinent, so identity is real history</td></tr>
+<tr><td>Diffuse, blobby land masses</td>
+<td>Continents are <b>Gaussian blobs</b>; the fractal noise term (×0.35) is too weak to
+disguise them, and overlapping blobs add without saturating</td>
+<td>Noise becomes the dominant term; tectonic fragments + variance-gated ridge belts shape
+the outline; domain warp applied to the whole field</td></tr>
+<tr><td>No rivers / biomes / terrain possible</td>
+<td><b>Ocean doesn't exist as data</b> — only land hexes are stored, so moisture, coasts,
+lakes, and river mouths have nothing to flow through</td>
+<td>Every cell exists (ocean included) and carries elevation, temperature, rainfall, water
+state, biome</td></tr>
+<tr><td>"Many seeds are unusable"</td>
+<td>Nothing checks the output; land fraction is an emergent accident</td>
+<td><b>Hard validation</b> (Dwarf Fortress style): every world is checked against the
+theme's acceptance rules; failures auto-retry with the next internal seed and tell you
+<i>why</i> ("seed 42 rejected: no river reaches a mouth")</td></tr>
+</table>
+
+<h2 id="research">3 · Research digest</h2>
+
+<h3>PerfectWorld (the Civ mod, read from its actual source)</h3>
+<ul>
+<li><b>Percentile thresholds everywhere.</b> Sea level, hills, mountains, desert, plains,
+forest, rivers — every cut is a percentile of the sorted map. Composition ("15% of land is
+mountain") becomes a design decision, identical on every seed. The single highest-value idea.</li>
+<li><b>Rain shadow from one subtraction.</b> Rainfall is a single sweep in wind order: air
+loads moisture over ocean, and rain falls in proportion to the <i>increase in uplift</i>
+along the path. Windward slope → torrential; leeward → the term clamps to ~0 and the dry
+airmass marches inland. Nobody codes "rain shadow" as a rule — it emerges.</li>
+<li><b>Latitude bands do climate for free.</b> Uplift peaks at the equator and the polar
+front (~60°), bottoms at ~28° — which is why Earth's great deserts sit at 30°. One
+piecewise curve makes maps read Earth-like instantly.</li>
+<li><b>Rivers on hex edges as a drainage tree.</b> Fill depressions → each junction gets
+exactly one downhill outflow (chosen with seeded randomness so rivers meander instead of
+running straight) → accumulate flow → keep the top percentile. Real dendritic networks.</li>
+<li><b>Relief by local difference, not absolute altitude</b> — otherwise you get peak-blobs
+surrounded by donuts of hills instead of linear ranges with foothills.</li>
+</ul>
+
+<h3>Shared principles from Minecraft, No Man's Sky, Dwarf Fortress, Civ, Red Blob</h3>
+<ul>
+<li><b>Fields first, labels second</b> (Minecraft 1.18's entire redesign): compute continuous
+elevation/temperature/moisture, <i>then</i> classify biomes from them — never the reverse.</li>
+<li><b>Parameter-space biome table with nearest-match fallback</b>: biomes are boxes in
+(elevation × temperature × rainfall …) space, as plain editable data; the lookup can never
+fail; each theme swaps in its own table.</li>
+<li><b>Archetype-first sampling</b> (No Man's Sky planet classes): pick the theme, then
+jitter <i>within</i> its parameter envelope — variety is bounded by construction, not luck.
+This is exactly Art's "each theme has its own subset of seeds": <code>hash(seed, theme)</code>.</li>
+<li><b>Hard rejection</b> (Dwarf Fortress): "world rejected: too few rivers" — regenerate and
+say why. Belt and braces on top of soft shaping.</li>
+<li><b>One seed, salted sub-seeds</b>: every subsystem draws from
+<code>hash(masterSeed, "climate", …)</code> so subsystems are independent and debuggable
+(same continents, different rivers, as an authoring feature).</li>
+<li><b>Endorheic basins</b>: ~20% of Earth's land drains to no ocean. If a basin's inflow ≤
+its evaporation, the river ends in a terminal salt lake — Art's "river dies in the desert",
+straight from real hydrology.</li>
+<li><b>Scale is a non-issue</b>: Red Blob's mapgen4 runs 1M+ cells in browser JS. Our finest
+grid is ~63k hexes; the whole pipeline budgets 300–600 ms.</li>
+</ul>
+
+<h3>The key mathematical finding: logarithmic falloff is free</h3>
+<p class="card">Art asked for neighbor influence that drops off <b>logarithmically</b> with
+distance. It turns out a classical result covers this: a multi-octave fractal noise field
+with amplitude ∝ 1/frequency (persistence 0.5, lacunarity 2 — the standard settings) is the
+<i>de Wijs process / 2D Gaussian Free Field</i>, whose spatial correlation decays exactly
+logarithmically. And on the hex graph, summing equal-weight smoothing passes at radii
+1, 2, 4, 8, 16, 32 approximates a log kernel at O(N·log R) cost. <b>The requirement is
+satisfied by construction, twice, for milliseconds</b> — no exotic model needed.</p>
+
+<h2 id="decisions">4 · The design decisions (as asked and answered)</h2>
+
+<div class="card decision">
+<div class="q">Q1 — Which probability model drives terrain assignment? (the requested top-3)</div>
+<div class="opt chosen"><b>Hybrid: noise backbone + MRF polish</b> — recommended, chosen</div>
+<div class="opt">Pure noise + parameter-space lookup (Minecraft 1.18 style) alone</div>
+<div class="opt">MCRF / transiogram spatial Markov chain</div>
+<p class="muted">Wave Function Collapse was evaluated and rejected for the whole-map role
+(no metric distance → nowhere to put a falloff kernel; unbounded restart cost at this
+scale); it stays in reserve as an optional local detailer.</p>
+<div class="procon">
+  <div class="pro"><b>Why the hybrid won</b>
+  Log falloff free (see §3) · "what likes to touch what" is directly tunable — a K×K
+  affinity matrix in JSON where "mountain likes mountain" is one number · fixes
+  box-boundary artifacts (jungle abutting tundra) and speckle · ~300–600 ms worst case,
+  no unbounded retries · every stage independently testable</div>
+  <div class="con"><b>Costs accepted</b>
+  Most stages to build (~6 modules, front-loaded work) · soft constraints only ("never
+  adjacent" is <i>very unlikely</i>, not impossible) · two tuning surfaces (biome table +
+  affinity matrix) can fight if the pairwise term is set too strong — guarded by a
+  regression test that a known rain shadow survives the polish pass</div>
+</div>
+</div>
+
+<div class="card decision">
+<div class="q">Q2 — How do continents form, so landmasses look once-connected?</div>
+<div class="opt chosen"><b>Supercontinent breakup (Wilson cycle)</b> — recommended, chosen:
+grow one Pangaea, crack it along a rift network, drift the fragments apart. Conjugate
+coastlines fit like puzzle pieces <i>by construction</i>. Rifted (passive) coasts get wide
+shelves and deltas; colliding (active) coasts get mountain ranges.</div>
+<div class="opt">Grown plates (BFS flood-fill tectonics) — geologically-placed mountains, but
+continents don't literally fit together</div>
+<div class="opt">Noise-ridge faking (PerfectWorld's approach) — cheapest, but no
+connectedness story</div>
+</div>
+
+<div class="card decision">
+<div class="q">Q3 — Keep the real-Earth country map?</div>
+<div class="opt chosen"><b>Keep both</b> — chosen: an Earth | Procedural mode toggle. Earth
+mode stays byte-identical (regression-locked); Procedural is the new generator.</div>
+<div class="opt">Procedural only</div>
+</div>
+
+<div class="card decision">
+<div class="q">Q4 — How do the new parameters surface in the UI?</div>
+<div class="opt chosen"><b>Theme + core dials + collapsible Advanced drawer</b> — chosen.
+Main bar: Theme, Seed, Ocean&nbsp;%, plus the existing density and node-cluster buttons.
+Advanced drawer: mountain %, rainfall multiplier, river density, fragment count, sea-level
+fine offset, honest-rivers dial. Legend always visible.</div>
+<div class="opt">Curated minimal (theme + seed + ocean % only)</div>
+<div class="opt">Full dial board (every parameter exposed)</div>
+</div>
+
+<div class="card decision">
+<div class="q">Q5 (added at the Milestone-1 review) — Sporadic land vs defined continents?</div>
+<div class="opt chosen"><b>Continents slider + per-continent character</b> — Art's call after
+seeing the first renders: a 1–7 continent count (each count is its own sub-seed universe),
+with each continent drawing a personality (snowy / desert / mountainous / …).</div>
+<p class="muted">Implementation note: the naive version of this (Gaussian attractor blobs)
+is exactly what produced "weird continents" before. What shipped instead: best-candidate
+site placement, saturating warped-distance masks, and a <b>ratio-based rift</b> — each cell
+is suppressed by (second-nearest ÷ nearest) continent influence, which ranks the zones
+<i>between</i> continents below outward-facing coasts. Because sea level is a percentile,
+it's the height <i>ordering</i> that decides where land grows — so continents grow outward
+instead of bridging into blobs. A regression test asserts the requested count materializes
+across seeds.</p>
+</div>
+
+<h2 id="design">5 · The design</h2>
+
+<h3>Every hex is multi-layered data</h3>
+<p>Unlike v1 (land hexes only), <b>every cell exists</b> — ocean included — and carries:</p>
+<pre>{ elevation   signed, 0 = sea level (the true zero)
+  crust       continental | oceanic
+  fragmentId  which piece of the broken supercontinent
+  temperature latitude insolation − altitude lapse (snow-capped equatorial peaks work)
+  rainfall    from the wind-advection sweep
+  water       none | ocean | coast | lake | saltflat
+  riverEdges  which of the 6 edges carry a river (width ∝ √flow)
+  biome       from the theme's parameter-space table
+  features    snowcap · forest · delta · … }</pre>
+<p>Land hosts lakes and rivers above it; mountains host snow above the snowline — Art's
+layering requirement, expressed as data.</p>
+
+<h3>The generation pipeline</h3>
+<pre>0 SEED       master seed + theme → salted sub-seeds per stage; seed jitters within
+             the theme's envelope (each theme = its own universe of seeds)
+1 TECTONICS  one supercontinent → rift cracks → fragments drift apart
+             → coastlines that FIT, passive vs active margins recorded
+2 FIELDS     elevation = crust base + collision uplift + fractal detail + ridge belts
+             → sea level cut at the Ocean % percentile → SIGNED elevation
+3 CLIMATE    temperature from latitude − altitude lapse
+             rainfall: one sweep along the prevailing winds — evaporate over ocean,
+             rain on rising ground, pass the rest downwind → RAIN SHADOWS emerge,
+             deserts appear at ~28° latitude on their own
+4 HYDROLOGY  fill depressions → every river junction gets one downhill outflow
+             → accumulate flow → rivers on hex edges, width ∝ √flow
+             → basins that evaporate more than they receive stay closed:
+               terminal salt lakes, rivers that die in the desert
+5 LABEL      biome = lookup in the theme's (elevation × temp × rainfall) table,
+             nearest-match fallback, dithered boundaries (no hard contour lines)
+6 REFINE     3–5 relaxation sweeps with the K×K adjacency-affinity matrix
+             (the neighbor-probability model, with log-distance influence)
+7 FEATURES   snowcaps, forests, river-mouth deltas; cosmetic fixups last
+8 VALIDATE   check the theme's acceptance rules; on failure retry internally and
+             SHOW the reason — no more unusable seeds reaching the screen</pre>
+
+<h3>Six world themes</h3>
+<table>
+<tr><th>Theme</th><th>Character</th></tr>
+<tr><td>Terran</td><td>Earthlike balance — ~60–70% ocean, full biome spread</td></tr>
+<tr><td>Pangaea</td><td>Breakup barely started: one supercontinent, dry interior deserts, big closed basins</td></tr>
+<tr><td>Shattered Archipelago</td><td>Breakup went to completion: island arcs, high ocean %, no deep interiors</td></tr>
+<tr><td>Dune</td><td>Arid world: rare precious rivers, oases, salt flats</td></tr>
+<tr><td>Glacial</td><td>Ice age: big caps, tundra belts, and a lowered sea level exposing land bridges</td></tr>
+<tr><td>Primordial</td><td>Young violent world: active margins everywhere, jagged relief, volcanic biomes</td></tr>
+</table>
+
+<h3>UI &amp; legend</h3>
+<p>Everything the v1 demo does (pan, wheel/pinch zoom, hover, click-to-select, node
+clustering 1/7/19, density presets) is preserved. New: the Earth|Procedural toggle, the
+Theme select, Ocean&nbsp;% dial, the Advanced drawer — and a proper <b>legend</b>: a color
+swatch + name for every biome and feature on the current map, driven by the active theme's
+palette (colors finally <i>mean</i> something instead of being hashed from names). The
+inspector gains elevation, biome, rainfall, temperature, and river flow.</p>
+
+<h2 id="milestones">6 · Build milestones</h2>
+<p class="muted">Each milestone ends with tests green, a rebuilt single-file
+<code>index.html</code>, and rendered PNGs for visual review before advancing.
+All seven landed 2026-08-04.</p>
+<ol>
+<li><b>Signed world</b> — every cell exists, fractal elevation, percentile sea level +
+Ocean&nbsp;% dial, mode toggle, hypsometric palette + first legend</li>
+<li><b>Climate</b> — temperature + wind-advected moisture; rain shadows visible; first biomes</li>
+<li><b>Hydrology</b> — rivers with real mouths, closed salt-lake basins, snowcaps</li>
+<li><b>Refine + reject</b> — adjacency polish + seed validation with surfaced reasons</li>
+<li><b>Themes</b> — all six, each with its own table, palette, and acceptance rules</li>
+<li><b>Tectonics</b> — supercontinent breakup replaces the placeholder landmass (the
+riskiest stage lands last, on a proven pipeline)</li>
+<li><b>Package &amp; handoff</b> — docs refresh, size budget, deploy, share</li>
+</ol>
+
+<h2 id="verify">7 · Verification</h2>
+<ul>
+<li>Deterministic: same (seed, theme, dials) ⇒ identical world, tested by deep equality.</li>
+<li>Earth mode byte-identical to today's demo (regression-locked baselines).</li>
+<li>Every river terminates at an ocean or a terminal lake — asserted, not hoped.</li>
+<li>A known rain shadow must survive the refinement pass (physics beats polish).</li>
+<li>The noise field's measured influence-vs-distance curve is checked against ln(h).</li>
+<li>Headless browser checks: both modes load with zero console errors; screenshot matrix
+across themes × densities.</li>
+</ul>
+
+<footer>
+HexWorld v2 spec · 2026-08-04 · researched &amp; drafted by Claude (Fable 5) with Art ·
+built on findings from PerfectWorld2/3 (Cephalo, Rich Marinaccio), Red Blob Games,
+Martin O'Leary, Azgaar, the Minecraft 1.18 &amp; Dwarf Fortress worldgen docs ·
+<a href="../index.html">current HexWorld demo</a>
+</footer>
+</main>
+</body>
+</html>
