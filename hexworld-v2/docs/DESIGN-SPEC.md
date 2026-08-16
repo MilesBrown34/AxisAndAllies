@@ -115,7 +115,7 @@ default ≡ omitted, terran theme ≡ pre-theme output.
 
 119 node:test tests across 9 suites (`node --test` — plain, no dir arg on
 Node 24), then `tools/build.mjs` (single-file build, budget ≤ 1.3MB), then
-headless-browser checks via the `window.__hexworld` hook (see `GEMINI.md`
+headless-browser checks via the `window.__hexworld` hook (see `CLAUDE.md`
 for getters, baselines, and the responsive click flow).
 
 ## Out of scope (YAGNI — parked without a new approved spec)
@@ -128,8 +128,9 @@ multiplayer/actions logic.
 
 # Appendix A — v1 Earth Demo Spec (2026-08-03, historical; still specifies Earth mode)
 
-**Status:** Approved by Art (design conversation, 2026-08-03); built via
-`IMPLEMENTATION-PLAN.md` (which rebuilds the Earth demo only).
+**Status:** Approved by Art (design conversation, 2026-08-03); built via a
+TDD implementation plan covering the Earth demo only (plan removed
+2026-08-15 as obsolete — the work it described shipped on 2026-08-04).
 
 ## Goal
 

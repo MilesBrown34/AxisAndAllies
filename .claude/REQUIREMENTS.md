@@ -26,6 +26,29 @@ Status key: `FINAL` = settled · `PROVISIONAL` = in force but may be revisited
 - [x] **Deliberately more complex than Risk.** — `FINAL`
       Politics and doctrine systems exist to add depth beyond territory capture.
 
+## Changelog
+
+**Active: no**
+
+The workspace default (`agents/STANDARDS.md` §7) is that every project keeps a
+changelog. This project switches it off, because the two things a changelog
+entry needs do not exist here yet:
+
+- There is no changelog file in the repo.
+- There is no user-visible version indicator. Nothing in `index.html`,
+  `js/app.js`, or `server.js` displays a version, and there is no
+  `package.json` at the project root to hold one. `hexworld-v2/package.json`
+  has no `version` field either.
+
+A version bump is supposed to land in both the changelog and the visible
+indicator; with neither present, entries would be unverifiable bookkeeping.
+
+**Switch it on when** the game reaches a versioned state — i.e. when there is a
+version string on screen to bump alongside the file. At that point create the
+changelog, set `Active: yes`, and adopt the standard format: `X.YZ`, newest
+first, each entry giving version, date, and what shipped. Docs-only and
+agent-rule-only changes do not bump.
+
 ---
 
 ## To be filled in

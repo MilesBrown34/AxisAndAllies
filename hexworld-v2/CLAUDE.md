@@ -1,4 +1,4 @@
-# HexWorld — Agent Instructions (GEMINI.md)
+# HexWorld — Agent Instructions (CLAUDE.md)
 
 You are working on **HexWorld**, a self-contained hex world map demo (PixiJS)
 with two generators: **Earth mode** (real country borders) and **Procedural
@@ -15,8 +15,6 @@ to work on it safely.
    log (open it in a browser; it records what landed in M1–M6 and why).
 4. `src/core.js` — the pure lattice/Earth core. Then `src/procgen/worldgen.js`
    — the pipeline facade; it orchestrates every other procgen module.
-5. `docs/IMPLEMENTATION-PLAN.md` — the v1 TDD plan (historical). Executing it
-   task-by-task rebuilds the **Earth demo only**, not the v2 engine.
 
 ## Invariants — do not break
 

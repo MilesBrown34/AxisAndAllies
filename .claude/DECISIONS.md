@@ -16,6 +16,26 @@ Format:
 
 ---
 
+## hexworld-v2 as the intended map generator
+**Date:** 2026-08 (built 2026-08-03 → 2026-08-05; recorded 2026-08-15)
+**Decision:** Build procedural world generation as a standalone lab
+(`hexworld-v2/`) and adopt it as the project's intended map generator, replacing
+the hardcoded ASCII `earthMap` blueprint in `js/state.js::generatePlanetMap()`.
+**Not yet integrated** — the two trees are still fully independent.
+**Rationale:** The live generator paints a fixed 120×60 Earth-shaped blueprint,
+so every game uses the same world. Building generation outside the game let it
+grow its own test suite (119 tests, determinism-asserting) without the game's
+DOM and state coupling, and it ships as a runnable demo on its own.
+**Alternatives considered:**
+- Grow procedural generation inside `js/state.js` — rejected; no test seam,
+  and the game's state model would have to churn alongside the algorithm.
+- Keep the ASCII blueprint permanently — rejected; a fixed world caps replay
+  value, and territory seeds are already coordinate-based, so they can move.
+- Hand-author more blueprints — rejected as unbounded manual work.
+**Status:** PROVISIONAL — adopted in intent, unproven in the game. The wiring
+itself is unresolved; see "How does hexworld-v2 connect to the live game?" in
+`OPEN_QUESTIONS.md`.
+
 ## Data-driven game content
 **Date:** pre-2026-08 (recorded retroactively 2026-08-12)
 **Decision:** Keep territory, unit and card definitions in `js/data/` as plain

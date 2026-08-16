@@ -1,7 +1,7 @@
 # Axis And Allies Project — Knowledgebase
 
 Detailed reference material. **Loaded on demand, not every session** — keep the
-always-loaded context in `quick-context.md` and `../CLAUDE.md` instead.
+always-loaded context in `../../CLAUDE.md` instead.
 
 ## Structure
 

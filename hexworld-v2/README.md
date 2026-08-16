@@ -85,13 +85,11 @@ src/template.html      Page skeleton + CSS + injection tokens.
 tools/build.mjs        Inlines pixi + data + core + procgen + app into index.html.
 test/                  node:test suites (run before every build).
 docs/                  DESIGN-SPEC.md (current spec), v2-spec.html (the illustrated
-                       v2 spec + per-milestone build log), IMPLEMENTATION-PLAN.md
-                       (v1 Earth demo, historical).
-GEMINI.md              Agent-facing instructions (auto-loaded by Gemini CLI).
-AGENT_PROMPT.md        Paste-able kickoff prompt for an AI coding agent.
+                       v2 spec + per-milestone build log).
+CLAUDE.md              Agent-facing instructions (auto-loaded by Claude Code).
 ```
 
-Key invariants (the full list lives in `GEMINI.md`): the world is
+Key invariants (the full list lives in `CLAUDE.md`): the world is
 **deterministic** — `(mode, seed, size, node mode, dials, theme)` fully
 determines the map; Earth mode and every procedural default are byte-preserved;
 toggling node mode never changes the hex layout.
