@@ -113,6 +113,11 @@ reimplementation.
 `.claude/REQUIREMENTS.md`, `DECISIONS.md`, `OPEN_QUESTIONS.md`, `TESTING.md`,
 and `knowledgebase/` (loaded on demand, not every session).
 
+`Documentation/spec.html` — generated design spec and running build log: how the
+project got here, what shipped when, and why. Open it in a browser. A snapshot,
+not a source of truth; the `.claude/` files above win any disagreement. Append a
+milestone card to its §5 when a phase of work lands.
+
 Still undecided: the multiplayer model, how binding the rulebook is, map scale
 and performance budget, save/load, and the hexworld-v2 integration. They are in
 `.claude/OPEN_QUESTIONS.md` — don't invent answers to them.

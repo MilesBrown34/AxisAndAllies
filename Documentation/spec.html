@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Axis And Allies Project — Design Spec</title>
+<style>
+  :root {
+    --bg: #0f1216;
+    --panel: #171b21;
+    --panel-2: #1e232b;
+    --border: #2a303a;
+    --text: #e8eaed;
+    --text-dim: #9aa4b2;
+    --accent: #7c9eff;
+    --accent-dim: #3a4a7a;
+    --good: #4caf82;
+    --warn: #e0a83c;
+    --bad: #e05c5c;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 15px/1.6 "Segoe UI", system-ui, sans-serif;
+    padding: 0 16px 80px;
+  }
+  main { max-width: 900px; margin: 0 auto; }
+  header { padding: 44px 0 10px; border-bottom: 2px solid var(--accent); margin-bottom: 30px; }
+  h1 { color: var(--accent); font-size: 27px; letter-spacing: 0.3px; }
+  .sub { color: var(--text-dim); margin-top: 8px; font-size: 14px; }
+  .status-badge {
+    display: inline-block; margin-top: 10px; padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--good);
+    color: var(--good);
+  }
+  .disclaimer {
+    margin: 22px 0 0; padding: 12px 14px; border-radius: 6px;
+    background: var(--panel); border-left: 3px solid var(--accent);
+    color: var(--text-dim); font-size: 13.5px;
+  }
+  h2 {
+    color: var(--accent); font-size: 20px; margin: 44px 0 12px;
+    border-bottom: 1px solid var(--border); padding-bottom: 6px;
+  }
+  h3 { color: var(--text); font-size: 16px; margin: 22px 0 8px; }
+  p { margin: 10px 0; }
+  a { color: var(--accent); }
+  ul, ol { margin: 10px 0 10px 24px; }
+  li { margin: 5px 0; }
+  code {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 5px; font: 13px/1.5 ui-monospace, Consolas, monospace;
+  }
+  pre {
+    background: #0b0e12; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; margin: 14px 0;
+    font: 12.5px/1.55 ui-monospace, Consolas, monospace; color: var(--text-dim);
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 18px; margin: 14px 0;
+  }
+  .chat { border-left: 4px solid var(--border); }
+  .chat .who { font-weight: 600; font-size: 13px; margin-bottom: 2px; color: var(--accent); }
+  .chat p { margin: 6px 0; color: var(--text); }
+  .decision { border-left: 4px solid var(--accent); }
+  .decision .q { font-weight: 600; color: var(--text); }
+  .opt { margin: 8px 0 8px 14px; color: var(--text-dim); }
+  .opt.chosen { color: var(--text); }
+  .opt.chosen::before { content: "\2714 "; color: var(--good); font-weight: 700; }
+  .opt:not(.chosen)::before { content: "\25CB "; color: var(--text-dim); }
+  .opt .reason { color: var(--text-dim); font-size: 13px; }
+  .tag {
+    display: inline-block; background: var(--panel-2); border: 1px solid var(--accent-dim);
+    color: var(--accent); border-radius: 20px; padding: 1px 10px; font-size: 12px; margin: 2px 3px 2px 0;
+  }
+  .status-final { color: var(--good); border-color: var(--good); }
+  .status-provisional { color: var(--warn); border-color: var(--warn); }
+  .status-superseded { color: var(--bad); border-color: var(--bad); text-decoration: line-through; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--panel-2); color: var(--accent); }
+  tr:nth-child(even) td { background: rgba(30, 35, 43, 0.4); }
+  .procon { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0; }
+  .procon div { background: var(--panel-2); border-radius: 6px; padding: 10px 12px; font-size: 13.5px; }
+  .procon .pro { border-left: 3px solid var(--good); }
+  .procon .con { border-left: 3px solid var(--bad); }
+  .procon b { display: block; margin-bottom: 4px; }
+  .pro b { color: var(--good); } .con b { color: var(--bad); }
+  .muted { color: var(--text-dim); font-size: 13px; }
+  .callout {
+    background: var(--panel); border: 1px solid var(--warn); border-left: 4px solid var(--warn);
+    border-radius: 8px; padding: 14px 18px; margin: 16px 0;
+  }
+  .callout b { color: var(--warn); }
+  footer { margin-top: 60px; border-top: 1px solid var(--border); padding-top: 14px; color: var(--text-dim); font-size: 12.5px; }
+  @media (max-width: 640px) { .procon { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>Axis And Allies Project — Design Spec</h1>
+  <div class="sub">Browser-based tactical strategy game — Risk-like, with more depth.
+  Territory map, combat resolution, politics and doctrines. Vanilla ES modules served
+  by a zero-dependency Node static server.</div>
+  <div class="status-badge">in development — public repo, served live on GitHub Pages</div>
+</header>
+
+<p class="disclaimer"><b>This is a snapshot, not a source of truth.</b> It is
+synthesized from <code>CLAUDE.md</code>, <code>README.md</code>,
+<code>.claude/REQUIREMENTS.md</code>, <code>.claude/DECISIONS.md</code>,
+<code>.claude/OPEN_QUESTIONS.md</code>, <code>.claude/TESTING.md</code>,
+<code>hexworld-v2/CLAUDE.md</code> and the repo's own git history — those files
+remain authoritative and win any disagreement. This project has <b>no
+changelog and no version indicator by decision</b>
+(<code>.claude/REQUIREMENTS.md</code> → "Changelog: Active: no"), so §5 below is
+assembled from git history and file dates rather than from a version log.</p>
+
+<p>This is the working spec for the Axis And Allies Project: what it is, how it got
+here, what is built, and what is still undecided. Sections 1, 2 and 5 are the durable
+record — history, appended to as the project moves. Sections 3, 4, 6 and 7 are
+snapshots of files under <code>.claude/</code> that will drift; each names its source.</p>
+
+<h2 id="origin">1 · How this started</h2>
+
+<div class="card chat">
+  <div class="who">Miles — stated intent, as recorded in <code>.claude/OPEN_QUESTIONS.md</code></div>
+  <p>"similar to Risk but slightly more complicated"</p>
+</div>
+
+<p>That single line is the whole design constraint, and it cuts both ways. It is why
+the game has a hex/territory map, a senate, doctrines and a card deck rather than
+Risk's single "roll dice, take territory" loop — and it is equally why the project is
+<strong>deliberately not a faithful Axis &amp; Allies port</strong>. The official
+rulebook (<code>A&amp;A_40Anni_Rulebook_WEB.pdf</code>) sits in the repo as
+<em>reference</em>. How binding it is has never been decided and is still an open
+question (§7).</p>
+
+<h3>The name confusion, resolved up front</h3>
+
+<p>The repo is called <b>Axis And Allies</b>. The game's internal name is
+<b>Iron &amp; Crowns</b> — that is the <code>&lt;title&gt;</code> at
+<code>index.html:6</code> and the header comment of all nine JS modules and
+<code>server.js</code>. There is no second project. An agent grepping the source for
+"Axis" and finding only "Iron &amp; Crowns" has found the right code.</p>
+
+<h3>Two code trees, one repo</h3>
+
+<p>The repo contains two independent code trees: the live game at the root, and
+<code>hexworld-v2/</code>, a self-contained map-generation lab. <strong>They are not
+two generations of the same thing and they are not connected.</strong> This was
+mis-stated in the project's own docs until an audit on 2026-08-16 corrected it, and it
+is the single fact most likely to mislead someone new — the full treatment is in §4.</p>
+
+<h3>What the git history does and does not tell you</h3>
+
+<p>The repo's first commit is <code>dd29489</code>, 2026-08-14, message
+<em>"Initial commit: clean break from prior AxisAndAllies history"</em>. Everything
+before that point — how the root game was built, in what order, and over what period —
+is <strong>not recoverable from this repository</strong>. Every root-tree source file
+carries the same 2026-08-12 mtime from being copied into the clean tree.
+<code>.claude/DECISIONS.md</code> dates the two oldest decisions only as
+"pre-2026-08 (recorded retroactively)". This document does not guess at that period.</p>
+
+<p>The <code>hexworld-v2/</code> tree is the opposite: it carries its own dated,
+per-milestone build log (<code>hexworld-v2/docs/v2-spec.html</code>), and its source
+file mtimes run 2026-08-03 → 2026-08-05. Its history is in §5 in detail.</p>
+
+<h2 id="research">2 · Research digest</h2>
+
+<h3>Civ V map architecture</h3>
+
+<p><code>civ5_map_architecture_deep_dive.md</code> (162 lines) is a technical analysis
+of how Firaxis built Civilization V's map system, written as input to this project's
+map design. Its status is precise and worth stating carefully:</p>
+
+<div class="callout">
+<b>Superseded as the map-generation lineage only — still the live reference for the
+renderer.</b> <code>js/map.js:1</code> declares itself
+<code>CIV 5 HEX GRID STYLE</code>, and the corresponding entry in
+<code>.claude/DECISIONS.md</code> is <span class="tag status-provisional">PROVISIONAL</span>,
+not superseded. Do not read "hexworld-v2 replaces this" as "the Civ V notes are dead."
+</div>
+
+<p>What the notes established, and where each idea landed:</p>
+
+<table>
+<tr><th>Civ V finding</th><th>Where it shows up here</th></tr>
+<tr><td><b>Strict decoupling of plot coordinates (discrete <code>q,r</code> hex
+indices) from world-space rendering coordinates</b> — logic stays predictable while
+visuals bend across cell lines</td>
+<td>The root game's core split: <code>js/state.js</code> holds discrete hex/territory
+state, <code>js/map.js</code> owns all geometry and pixels. It is also why
+<code>js/data/mapData.js</code> can place 26 territory seeds as plain
+<code>q</code>/<code>r</code> pairs.</td></tr>
+<tr><td>Rivers and borders are <b>edge features</b> — stored as flags on the shared
+edge between two hexes, not inside a cell</td>
+<td>Adopted wholesale in <code>hexworld-v2</code>: rivers flow along hex <b>edges</b>
+via a junction graph, which is what makes every river end at a real coastline
+vertex.</td></tr>
+<tr><td>Terrain blending, texture splatting, overlay features that overflow cell
+boundaries</td>
+<td>Reflected only as far as a 2D canvas/SVG renderer can go — terrain textures in
+<code>images/tex_*.png</code>, hybrid canvas/SVG drawing in
+<code>js/map.js</code>. The 3D/DX11 tessellation and shader material is background,
+not a build target.</td></tr>
+<tr><td>Hit-testing and LOD as <b>math</b> rather than per-hex scene objects</td>
+<td>Independently arrived at in both trees — <code>js/map.js</code> does pan/zoom and
+hit-testing by hex-path math; <code>hexworld-v2/CLAUDE.md</code> records the same rule
+as a hard gotcha ("Hit-testing is math (<code>pixelToCell</code>), NOT per-hex
+interactive display objects").</td></tr>
+</table>
+
+<h3>Procedural world generation (inherited with <code>hexworld-v2/</code>)</h3>
+
+<p>hexworld-v2 was not researched for this project — it was built as a standalone lab
+and imported. Its research is recorded in its own spec
+(<code>hexworld-v2/docs/v2-spec.html</code> §2, and
+<code>hexworld-v2/docs/DESIGN-SPEC.md</code>). The short version: it started as a
+diagnosis of an earlier procedural hex generator that produced "diffuse" landmasses,
+"weird continents", and a sea-level slider that felt random. Each symptom traced to a
+root cause with a specific fix:</p>
+
+<table>
+<tr><th>Symptom</th><th>Root cause</th><th>Fix as built</th></tr>
+<tr><td>Sea level ignores land/water boundaries; the slider feels random</td>
+<td>Sea level was an absolute threshold on an <b>unnormalized</b> elevation field,
+fighting randomly-strengthed continent attractors</td>
+<td><b>Percentile sea level</b> — sort elevations and cut at the Ocean % dial, giving
+the exact land fraction on every seed and making elevation signed around a true
+zero</td></tr>
+<tr><td>"Weird continents" — straight borders slicing through one landmass</td>
+<td>Continent identity was the Voronoi cell of the nearest attractor, computed
+independently of the actual land</td>
+<td>Label landmasses by <b>flood fill of connected land</b>; continents become drifted
+fragments of one supercontinent, so identity is real history</td></tr>
+<tr><td>Diffuse, blobby landmasses</td>
+<td>Continents were Gaussian blobs with a fractal-noise term too weak to disguise
+them</td>
+<td>Noise becomes the dominant term; tectonic fragments and ridge belts shape the
+outline; domain warp applied to the whole field</td></tr>
+<tr><td>No rivers, biomes or terrain were possible at all</td>
+<td><b>Ocean did not exist as data</b> — only land hexes were stored, so moisture,
+coasts, lakes and river mouths had nothing to flow through</td>
+<td>Every cell exists (ocean included) carrying elevation, temperature, rainfall and
+water state</td></tr>
+</table>
+
+<p>Reference models it drew on, per its own spec: Whittaker biome classification
+(temperature × rainfall), priority-flood terrain hydrology, Potts/MRF relaxation for
+biome-boundary cleanup, and supercontinent-breakup tectonics for continent shape.</p>
+
+<h2 id="decisions">3 · Design decisions</h2>
+<p class="muted">Snapshot of <code>.claude/DECISIONS.md</code>, newest first — that
+file is authoritative and append-only. Three entries are recorded there.</p>
+
+<div class="card decision">
+<div class="q">hexworld-v2 as the intended map generator</div>
+<div class="opt chosen"><b>Build procedural world generation as a standalone lab
+(<code>hexworld-v2/</code>) and adopt it as the project's intended map generator</b>,
+replacing the hardcoded ASCII <code>earthMap</code> blueprint in
+<code>js/state.js::generatePlanetMap()</code>. Building it outside the game let it grow
+its own test suite (119 determinism-asserting tests) free of the game's DOM and state
+coupling, and it ships as a runnable demo on its own.</div>
+<div class="opt">Grow procedural generation inside <code>js/state.js</code>
+<span class="reason">— rejected: no test seam, and the game's state model would have to
+churn alongside the algorithm</span></div>
+<div class="opt">Keep the ASCII blueprint permanently <span class="reason">— rejected:
+a fixed world caps replay value, and territory seeds are already coordinate-based, so
+they can move</span></div>
+<div class="opt">Hand-author more blueprints <span class="reason">— rejected as
+unbounded manual work</span></div>
+<span class="tag status-provisional">PROVISIONAL</span> — adopted in intent, unproven
+in the game. <b>Not yet integrated</b>; the wiring itself is unresolved, see §7.
+</div>
+
+<div class="card decision">
+<div class="q">Data-driven game content</div>
+<div class="opt chosen"><b>Keep territory, unit and card definitions in
+<code>js/data/</code> as plain data modules</b>, separate from the systems that consume
+them — so balance tuning never requires touching combat or map logic</div>
+<div class="opt">Inline stats into the systems <span class="reason">— rejected: makes
+balance passes risky</span></div>
+<span class="tag status-final">FINAL</span>
+</div>
+
+<div class="card decision">
+<div class="q">Civ V map architecture as a design reference</div>
+<div class="opt chosen"><b>Study Civ V's map/territory architecture</b> (see
+<code>civ5_map_architecture_deep_dive.md</code>) as input to the map design rather than
+copying the Axis &amp; Allies board directly — a tile/territory architecture with real
+adjacency semantics serves "Risk with more depth" better than a fixed board</div>
+<div class="opt">Direct board reimplementation <span class="reason">— rejected as too
+constraining for the intended design</span></div>
+<span class="tag status-provisional">PROVISIONAL</span>
+</div>
+
+<p class="muted">The two older entries were reconstructed retroactively on 2026-08-12
+from the repository's own structure and reference material; their dates are
+approximate and <code>.claude/DECISIONS.md</code> says so.</p>
+
+<h3>Engineering decisions inside <code>hexworld-v2/</code></h3>
+
+<p>hexworld-v2 carries a second, tree-local set of decisions in
+<code>hexworld-v2/CLAUDE.md</code> — ten numbered invariants, all regression-pinned by
+its test suite. They are binding on that tree and are the reason its output is
+reproducible at all. Summarized in §4; read the file before changing generation code.</p>
+
+<h2 id="design">4 · The design</h2>
+
+<h3>The two code trees</h3>
+
+<div class="callout">
+<b>Two code trees live in this repo. They are not two generations, and they are not
+connected.</b> <code>grep -ri hexworld</code> across <code>js/</code>,
+<code>index.html</code>, <code>index.css</code> and <code>server.js</code> returns
+nothing, and hexworld-v2 never mentions Axis &amp; Allies or Iron &amp; Crowns.
+<code>server.js</code> is a generic static server rooted at <code>__dirname</code>
+(<code>server.js:24</code>), so it happens to serve both — <b>by accident, not by
+design</b>. hexworld-v2 is a <b>component-in-waiting, not a replacement that has
+landed.</b>
+</div>
+
+<table>
+<tr><th>Tree</th><th>What it is</th></tr>
+<tr><td><b>Root</b> — <code>index.html</code>, <code>index.css</code>,
+<code>server.js</code>, <code>js/**</code></td>
+<td>The live game. <code>index.html:559</code> loads exactly one entry point,
+<code>js/app.js</code>. No package manifest, no build step, no dependencies.</td></tr>
+<tr><td><b><code>hexworld-v2/</code></b></td>
+<td>A self-contained map-generation lab with its own <code>package.json</code>,
+<code>src/</code>, <code>test/</code>, <code>tools/</code> and <code>docs/</code>.
+119 tests, all passing. Ships as one self-contained ~1.02 MB
+<code>hexworld-v2/index.html</code> with zero runtime network requests.</td></tr>
+</table>
+
+<h3>Root game — module layout</h3>
+
+<table>
+<tr><th>File</th><th>Lines</th><th>Responsibility</th></tr>
+<tr><td><code>js/app.js</code></td><td>499</td><td>Entry point, layout controller,
+turn-phase state machine, wiring of the four engines</td></tr>
+<tr><td><code>js/map.js</code></td><td>1183</td><td><b>Largest module.</b> Hybrid
+canvas/SVG renderer — hex paths, pan/zoom, hit-testing. <b>No world
+generation.</b></td></tr>
+<tr><td><code>js/state.js</code></td><td>562</td><td>Central game-state model —
+<b>and</b> world generation (<code>generatePlanetMap()</code>)</td></tr>
+<tr><td><code>js/combat.js</code></td><td>287</td><td>Combat resolution engine</td></tr>
+<tr><td><code>js/politics.js</code></td><td>189</td><td>Senate offices and commander
+bribery</td></tr>
+<tr><td><code>js/doctrines.js</code></td><td>147</td><td>Doctrine/research tracks
+(tactics, industrial mobilization, …)</td></tr>
+<tr><td><code>js/data/mapData.js</code></td><td>49</td><td>The 26 capital and region
+seeds — <code>q</code>/<code>r</code> coordinates, default owner, type</td></tr>
+<tr><td><code>js/data/unitData.js</code></td><td>104</td><td>Unit stats (cost in
+wood/metal/oil, attack, defense, move) and national upgrades</td></tr>
+<tr><td><code>js/data/cardData.js</code></td><td>107</td><td>Crown card definitions —
+action cards, events, senate offices</td></tr>
+</table>
+
+<p><code>js/data/*</code> are data tables, not logic. Tune balance by editing data, not
+code.</p>
+
+<h3>Turn structure and resources</h3>
+
+<p>A turn is a seven-step state machine in <code>js/app.js:107</code>:</p>
+
+<pre>Event -> Purchase -> Combat Move -> Combat -> Noncombat Move
+      -> Senate Bidding -> End Turn -> (wraps back to Event)</pre>
+
+<p>Entering the Event phase draws a random global event from
+<code>cardData.events</code> and applies its modifiers. Economy runs on four
+resources — <b>gold</b> plus <b>wood / metal / oil</b> — with unit costs denominated in
+the latter three (<code>js/data/unitData.js</code>) and territory income and resource
+type assigned during map generation. Senate offices are won by bidding, and commanders
+can be bribed (<code>js/politics.js</code>).</p>
+
+<h3>World generation in the live game — the ASCII blueprint</h3>
+
+<p>This is the part most often described incorrectly, so it is stated plainly:</p>
+
+<pre>GameState.generatePlanetMap()          js/state.js:60-328
+   |
+   |  120 x 60 hex grid  (maxQ = 119, maxR = 59  ->  7,200 hexes)
+   v
+hardcoded ASCII-art `earthMap` blueprint      js/state.js:107-168
+   |     60 string rows, 120 chars each, hand-drawn as Earth
+   |     chars . g d f j m t s  ->  sea / grassland / desert / forest
+   |                                / jungle / mountain / tundra / (sea)
+   |     lookup table `charToBiome`            js/state.js:170
+   v
+each LAND hex assigned to the nearest of 26 territory seeds
+   |     seeds are hand-placed q/r pairs       js/data/mapData.js
+   |     e.g. Essen_Core (q 59, r 16), Rhine_Plains (q 54, r 18)
+   v
+this.generatedTerritories  ->  this.board  (initializeBoard, js/state.js:330)</pre>
+
+<p><strong>It is not procedural.</strong> Every game plays the same world, because the
+world is a picture someone drew in characters. <strong>That ASCII blueprint is what
+hexworld-v2 is a candidate to replace</strong> — <b>not</b> <code>js/map.js</code>,
+which is rendering only and contains no world generation at all. Two earlier documents
+in this repo got that target wrong; it was corrected on 2026-08-16.</p>
+
+<h3>The renderer</h3>
+
+<p><code>js/map.js</code> is a hybrid canvas/SVG engine: it builds hex paths, draws
+terrain from the textures in <code>images/</code>, and handles pan, zoom and
+hit-testing by geometry math rather than per-hex event targets. It is the largest and
+most coupled module in the tree (1,183 lines, rendering and geometry interleaved) and
+is listed as a known high-risk area in <code>.claude/TESTING.md</code>.</p>
+
+<h3>Why there is a server at all</h3>
+
+<p><code>server.js</code> is 52 lines of zero-dependency Node serving the folder on
+<code>http://localhost:8080</code>. Its own header comment
+(<code>server.js:2</code>) gives the reason: ES modules cannot be loaded over
+<code>file://</code> without tripping CORS. It holds no game state — whether this
+project ever becomes networked is an open question (§7).</p>
+
+<h3><code>hexworld-v2/</code> — the generation pipeline</h3>
+
+<p>Each stage is a pure, seeded module under <code>hexworld-v2/src/procgen/</code>;
+<code>hexworld-v2/src/procgen/worldgen.js</code> is the facade that orchestrates them.</p>
+
+<pre>tectonics -> elevation/sea -> climate -> hydrology -> biomes
+          -> refine -> validate -> themes</pre>
+
+<ul>
+<li><b>Tectonics</b> — worlds are made by <b>supercontinent breakup</b>. One landmass
+grows in pre-drift "plate space", cracks along a shared meandering rift network, and
+the fragments drift apart on the wrapped map. Because both sides of a rift are cut by
+the <em>same</em> curve, facing coastlines are conjugate — they visibly fit. Leading
+edges become active margins (coastal mountain arc + offshore trench, and the volcanic
+biome); trailing edges become passive margins (wide shallow shelf seas).</li>
+<li><b>Elevation and sea level</b> — signed elevation from tectonic crust plus fBm
+noise, domain-warped, with a polar fade. Sea level is a true quantile zero, so the
+Ocean % dial delivers the exact land fraction on every seed.</li>
+<li><b>Climate</b> — temperature from latitude insolation minus a mountain lapse rate;
+rainfall from a wind-ordered moisture sweep across trade/westerly/polar-easterly belts,
+with orographic uplift, leeward carry, and descending air that genuinely drains column
+moisture. Rain shadows and ~28° desert belts are <b>emergent, not painted</b>.</li>
+<li><b>Hydrology</b> — rivers flow along hex <b>edges</b>. Every grid corner is a
+junction; a priority-flood pass finds the water surface, each junction gets one seeded
+downhill outflow, and rainfall feeds flow accumulation down those chains. Width scales
+with √flux, so tributaries visibly merge into trunks. Starved closed basins become
+endorheic salt lakes or dry salt flats — rivers are allowed to die honestly in a
+desert.</li>
+<li><b>Biomes and refine</b> — a Whittaker-style table maps (temperature, rainfall) to
+biome, then dithering plus a Potts/MRF relaxation over a designer-editable affinity
+matrix absorbs single-hex speckle without erasing rain shadows.</li>
+<li><b>Validate</b> — every generated world must clear a quality floor (enough river
+mouths, enough distinct biomes, the requested continents actually present). A failing
+seed silently retries seed+1 and the stats bar states the reason.</li>
+<li><b>Themes</b> — six world personalities (Terran, Pangaea, Shattered Archipelago,
+Dune, Glacial, Primordial). Each is a bundle of dial defaults, a whole-world climate
+character, a palette re-skin, and its own acceptance rules, hashed into its own seed
+universe.</li>
+</ul>
+
+<h3><code>hexworld-v2/</code> — engineering invariants</h3>
+
+<p>These are load-bearing, regression-pinned, and the reason the lab's output is
+reproducible. Full text in <code>hexworld-v2/CLAUDE.md</code> (ten numbered
+invariants); the ones that most constrain future work:</p>
+
+<table>
+<tr><th>Invariant</th><th>Why it matters</th></tr>
+<tr><td><b>Purity</b> — <code>src/core.js</code> and every
+<code>src/procgen/</code> module stays pure and dual-environment: no DOM, no Pixi, no
+I/O, no <code>Date.now()</code>, no <code>Math.random()</code></td>
+<td>It is why the engine can be tested headlessly in Node at all — and why it could be
+imported into the game without dragging a renderer along.</td></tr>
+<tr><td><b>RNG substream discipline</b> — all randomness flows through
+<code>mulberry32</code> substreams salted off the world seed
+(<code>N.substream(seed, "name")</code>), never a shared sequential stream</td>
+<td>Adding a draw in one stage cannot shift every downstream stage's output.</td></tr>
+<tr><td><b>Draw-order preservation</b> — same
+<code>(mode, seed, sizeKey, clusterR, dials, theme)</code> ⇒ byte-identical world;
+<code>generateProcedural</code> replicates <code>core.generate</code>'s five main-stream
+draws in the same order</td>
+<td>Keeps the hex lattice identical between Earth and Procedural mode at the same seed.
+Reordering draws silently invalidates every pinned regression.</td></tr>
+<tr><td><b>Identity defaults, three layers</b> — Earth mode is byte-preserved (seed 1
+medium ⇒ <code>totalLand === 1828</code>); every dial's default ≡ omitting the option;
+the terran theme is the identity</td>
+<td>New dials and new themes cannot quietly change existing worlds.</td></tr>
+<tr><td><b>Raw vs facade layering</b> — <code>generateProcedural</code> stays raw and
+theme-less; themes, validation and seed+1 retry live only in the
+<code>generateWorld</code> facade</td>
+<td>Engine tests target the raw layer; the app calls the facade.</td></tr>
+<tr><td><b>One self-contained deliverable</b> — everything is inlined into
+<code>hexworld-v2/index.html</code> by <code>tools/build.mjs</code>, zero runtime
+requests, budget ≤ 1.3 MB (currently ~1.02 MB)</td>
+<td>That file and <code>src/world-data.js</code> are <b>build artifacts — never
+hand-edit them.</b></td></tr>
+</table>
+
+<h2 id="milestones">5 · Build milestones</h2>
+
+<p class="muted">Newest first. There is no changelog and no version number in this
+project by decision, so these are <b>phases</b>, dated from git history
+(<code>git log</code>) and file mtimes. Where a date cannot be established from either,
+it is left vague rather than invented.</p>
+
+<div class="card">
+<span class="tag">2026-08-16</span> <b>Documentation pass — the two-tree structure gets
+written down correctly</b>
+<p class="muted">Commit <code>b180f76</code>, "Document the two-tree structure; fix
+wrong integration target"</p>
+<ul>
+<li>Established and documented that the root tree and <code>hexworld-v2/</code> are
+<b>two independent trees, not two generations</b> — verified by grep in both
+directions.</li>
+<li><b>Fixed a wrong integration target.</b> Two docs had named
+<code>js/map.js</code> as what hexworld-v2 would replace. The real target is the
+hardcoded ASCII <code>earthMap</code> blueprint inside
+<code>js/state.js::generatePlanetMap()</code>; <code>js/map.js</code> is rendering only
+and contains no world generation.</li>
+<li><code>.claude/TESTING.md</code> rewritten to cover both trees — it had not
+documented the hexworld-v2 suite at all.</li>
+<li><code>.claude/OPEN_QUESTIONS.md</code> gained the hexworld-v2 integration question
+with its real blockers (module format, resolution mismatch, hand-placed
+territory seeds).</li>
+<li>Duplicated context files removed (<code>.claude/quick-context.md</code>,
+<code>.claude/system-prompt.md</code>), along with a stale
+<code>hexworld-v2/docs/IMPLEMENTATION-PLAN.md</code>, the M6 screenshot set, and an
+unreferenced <code>images/risk_map.png</code>.</li>
+<li>This document created.</li>
+</ul>
+</div>
+
+<div class="card">
+<span class="tag">2026-08-14</span> <b>Repo established; hexworld-v2 imported</b>
+<ul>
+<li><code>dd29489</code> — <em>"Initial commit: clean break from prior AxisAndAllies
+history."</em> Brought in the whole root game (<code>index.html</code>,
+<code>index.css</code>, <code>server.js</code>, all nine JS modules), the terrain
+textures, the rulebook PDF, the Civ V research notes, and a first pass at the
+Blueprint-v1 context files under <code>.claude/</code>.</li>
+<li><code>0d4e56a</code> — <em>"Add hexworld-v2: current map generator for this
+project."</em> The lab was copied in wholesale from its original monorepo.</li>
+<li><code>9ccc672</code> — added <code>README.md</code> with the public GitHub Pages
+links for the game, the hexworld-v2 demo, and hexworld's own progress spec.</li>
+<li>Remote: <code>MilesBrown34/AxisAndAllies</code> (public). GitHub Pages serves the
+repo root, which is why both trees are reachable.</li>
+</ul>
+</div>
+
+<div class="card">
+<span class="tag">pre-2026-08-12</span> <b>Baseline Iron &amp; Crowns build (root
+tree)</b>
+<p class="muted">Date not recoverable — the clean-break commit flattened the earlier
+history, and every root source file carries the same 2026-08-12 mtime.</p>
+<ul>
+<li>Hex/territory map: 120×60 grid painted from the ASCII <code>earthMap</code>
+blueprint, 26 territories grown from hand-placed seeds.</li>
+<li>Hybrid canvas/SVG renderer with pan, zoom, hit-testing and terrain textures.</li>
+<li>Seven-phase turn state machine; global event draw at the top of each turn.</li>
+<li>Combat resolution engine with per-round rolls and retreat.</li>
+<li>Senate politics — office bidding and commander bribery.</li>
+<li>Doctrine/research tracks with persistent effects.</li>
+<li>Crown cards: action cards, events, offices.</li>
+<li>Four-resource economy (gold, wood, metal, oil) with data-driven unit costs.</li>
+<li>Zero-dependency Node static server on port 8080, added to get ES modules past
+CORS.</li>
+</ul>
+</div>
+
+<div class="card">
+<span class="tag">2026-08-05</span> <b>hexworld-v2 post-release: the Aridity dial</b>
+<ul>
+<li>An Advanced-drawer slider (0–200%) scaling the two mechanisms that actually make
+deserts — the horse-latitude subsidence belt and the Arid continent-character
+intensity. At 0 the terran desert share drops from ~16% to ~3% of land; at 200% it
+deepens into hyper-desert.</li>
+<li>Rain-shadow deserts survive at every setting — they are earned by the wind model,
+not painted.</li>
+<li><b>119 tests.</b> This is the count the suite still reports today.</li>
+</ul>
+</div>
+
+<div class="card">
+<span class="tag">2026-08-04</span> <b>hexworld-v2 Milestones M1–M7 — the whole
+geologic engine, in one day</b>
+<p class="muted">Per-milestone detail, with the reasoning and the bugs, is in
+<code>hexworld-v2/docs/v2-spec.html</code>.</p>
+<ul>
+<li><b>M1 Elevation + sea level</b> — every cell becomes real data (ocean included),
+signed elevation with a true percentile sea level, a Continents slider whose requested
+count actually materializes, per-continent characters, flood-fill landmass labeling,
+speck-island culling. 28 tests.</li>
+<li><b>M2 Climate</b> — temperature and rainfall per hex from a wind-ordered moisture
+sweep; emergent rain shadows and desert belts; an 11-entry Whittaker biome table.
+Two bugs the tests caught: subsidence that only <em>scales</em> rain defers it rather
+than removing it (the desert belt never formed until descending air genuinely drained
+the column), and fBm surface roughness was orographically bleeding parcels dry within
+~5 cells until sub-range bumps stopped counting as uplift. 49 tests.</li>
+<li><b>M2.5 Gate feedback</b> — Warp slider (0–150), a sea-breeze coastal lushness
+pass, and a responsive UI down to 340px-wide screens.</li>
+<li><b>M3 Hydrology</b> — edge-flowing rivers on a junction graph, priority-flood water
+surface, width ∝ √flux, endorheic salt lakes and salt flats, snowcaps above the
+snowline. 66 tests.</li>
+<li><b>M4 Refine + reject</b> — dithered biome boundaries, Potts/MRF relaxation, and
+hard seed rejection with the reason surfaced in the UI. Min-lake slider. 83 tests.</li>
+<li><b>M5 Themes + Advanced drawer</b> — six themes, each with its own dial envelope,
+climate character, palette re-skin, acceptance rules and hashed seed universe; the
+Advanced drawer of fine-tuning dials. 98 tests.</li>
+<li><b>M6 Tectonics</b> — placeholder continent masks replaced by real supercontinent
+breakup with conjugate rift coastlines, active/passive margins, and the volcanic biome.
+Took seven probed mechanism fixes to keep the "requested continents materialize"
+guarantee alive under real plate mechanics. 112 tests, zero rejected seeds across six
+themes × seeds 1–10.</li>
+<li><b>M7 Package &amp; handoff</b> — doc set rewritten to describe the engine as
+built; size budget confirmed at 1.02 MB against a 1.3 MB ceiling; final QA passed
+headlessly in both modes.</li>
+</ul>
+</div>
+
+<div class="card">
+<span class="tag">2026-08-03</span> <b>hexworld-v2 lab started</b>
+<ul>
+<li>The pure lattice/Earth core (<code>src/core.js</code>), the baked Natural Earth
+country data (<code>src/world-data.js</code> via <code>tools/bake-data.mjs</code>), the
+CommonJS test harness, and <code>package.json</code>.</li>
+<li>Earth mode is byte-preserved from the original demo from this point on — it becomes
+regression ballast for everything built after it.</li>
+</ul>
+</div>
+
+<h2 id="verify">6 · Verification</h2>
+<p class="muted">Snapshot of <code>.claude/TESTING.md</code>, which is authoritative.
+Coverage is split the same way the repo is.</p>
+
+<table>
+<tr><th>Tree</th><th>Coverage</th></tr>
+<tr><td><code>hexworld-v2/</code></td><td><b>Automated.</b> 9 suites, <b>119 tests</b>,
+all passing, ~18s to run.</td></tr>
+<tr><td>Root game (<code>js/**</code>, <code>index.html</code>,
+<code>server.js</code>)</td><td><b>Manual only.</b> No automated suite exists.</td></tr>
+</table>
+
+<h3>Running the hexworld-v2 suite</h3>
+
+<pre>cd hexworld-v2
+npm test                      # -> 119 pass, 0 fail
+node --test                   # what npm test runs
+node --test "test/*.cjs"      # explicit glob, quoted</pre>
+
+<div class="callout">
+<b>Gotcha:</b> <code>node --test test/</code> — a directory with a trailing slash —
+fails with <code>MODULE_NOT_FOUND</code> on Node 24. Use plain <code>node --test</code>
+or the quoted glob. Recorded in <code>hexworld-v2/CLAUDE.md:136</code>.
+</div>
+
+<p>The suite covers <code>src/procgen/</code> — tectonics, climate, hydrology, biomes,
+refine, themes, procgen, core, data. It is a determinism harness as much as a
+correctness one: several tests assert byte-for-byte reproducibility per
+<code>(opts, seed, theme)</code>. <b>It must be green before AND after any change under
+<code>hexworld-v2/src/</code>.</b></p>
+
+<h3>Root game — manual regression checklist</h3>
+
+<p>The full checklist is in <code>.claude/TESTING.md</code>, grouped into Boot, Core
+loop, Systems, World generation and Data integrity. The world-generation checks are
+the ones easiest to break by accident:</p>
+<ul>
+<li>All 26 seeds in <code>js/data/mapData.js</code> receive hexes — no empty
+territory.</li>
+<li>Land/sea coastlines still match the <code>earthMap</code> blueprint
+(<code>js/state.js:107-168</code>) after any edit to it.</li>
+<li>Every character used in <code>earthMap</code> has an entry in
+<code>charToBiome</code>.</li>
+<li>Every territory in <code>js/data/mapData.js</code> has valid adjacency references;
+every unit referenced by game logic exists in <code>js/data/unitData.js</code>; every
+card in <code>js/data/cardData.js</code> has a handler.</li>
+</ul>
+
+<h3>Known high-risk areas</h3>
+
+<table>
+<tr><th>Area</th><th>Why it's risky</th></tr>
+<tr><td><code>js/state.js</code></td><td>Central model — combat, politics and doctrines
+all read and mutate it. Changes ripple.</td></tr>
+<tr><td><code>js/state.js:60-328</code>
+<code>generatePlanetMap()</code></td><td>World generation. Editing the ASCII
+<code>earthMap</code> silently reshapes every territory.</td></tr>
+<tr><td><code>js/data/mapData.js</code> seeds/adjacency</td><td>A bad reference breaks
+movement silently — no error, just an unreachable territory.</td></tr>
+<tr><td><code>js/map.js</code></td><td>Largest module (1,183 lines); rendering and
+geometry are coupled.</td></tr>
+<tr><td>Combat ↔ state interaction</td><td>Losses applied twice or not at all are easy
+to miss by eye.</td></tr>
+<tr><td><code>hexworld-v2/index.html</code> and
+<code>hexworld-v2/src/world-data.js</code></td><td><b>Build artifacts</b>
+(<code>npm run build</code> / <code>npm run bake</code>). Hand-editing either one is
+silently destroyed by the next build.</td></tr>
+</table>
+
+<p class="muted">Performance testing has no target to test against — no territory-count
+ceiling or turn-resolution budget has been set (§7). Until that is decided,
+<code>.claude/TESTING.md</code> says to treat performance findings as observations, not
+failures.</p>
+
+<h2 id="open">7 · Open questions</h2>
+<p class="muted">Undecided, <b>not</b> requirements. Nothing here binds behavior.
+Snapshot of <code>.claude/OPEN_QUESTIONS.md</code> — five entries, all genuinely open.
+None of them is answered in this document.</p>
+
+<ul>
+<li><b>How does hexworld-v2 connect to the live game?</b> Adopted in intent, not wired
+in — the two trees share no code and no references. Replacing the ASCII blueprint means
+answering how a <em>generated</em> world gets 26 balanced, recognisable territories,
+since the seeds are currently hand-placed on Earth geography
+(<code>Essen_Core</code>, <code>Rhine_Plains</code>, …) and named after real places,
+which a random world cannot honour. It also crosses a module-format boundary
+(hexworld-v2 is CommonJS/UMD-lite, the game is ES modules) and a resolution one
+(hexworld's ~2.0k / 7.1k / 22.7k cells vs the game's 7,200). Options on the table run
+from importing <code>src/procgen/**</code> and generating at boot, to baking worlds
+offline as data, to keeping the Earth blueprint as default with generated worlds as a
+separate mode, to dropping the integration entirely. Owner: Miles + Minerva
+(architect). No target date.</li>
+<li><b>Multiplayer model — local, or networked?</b> <code>server.js</code> serves the
+client but there is no state-sync layer. Hotseat-with-a-static-server versus an
+authoritative server versus peer-to-peer changes the architecture of
+<code>js/state.js</code> substantially. Blocks any significant <code>js/state.js</code>
+restructuring. No target date.</li>
+<li><b>How much of the Axis &amp; Allies rulebook is binding?</b> The rulebook PDF sits
+in the repo, but the stated intent is "similar to Risk but slightly more complicated,"
+not a faithful port. Without a line, every rules question is a judgment call. Options:
+inspiration only / specific subsystems (combat odds, unit costs) track the rulebook /
+full fidelity. Blocks combat and unit balance work. Owner: Miles. No target date.</li>
+<li><b>Map scale and performance budget.</b> No territory-count ceiling and no
+turn-resolution time target has been set, so there is nothing to test map or combat
+performance against. Owner: Miles + Apollo (QA). No target date.</li>
+<li><b>Persistence — is there a save game?</b> No save/load path exists; game state
+lives only in the in-memory <code>GameState</code> instance, and a page reload starts a
+fresh game. Blocks nothing yet. Owner: Miles. No target date.</li>
+</ul>
+
+<p><code>.claude/REQUIREMENTS.md</code> carries a matching "To be filled in" list —
+target map size / territory ceiling, performance budget, multiplayer model, browser
+support floor, and save/load expectations. They are recorded there as explicitly
+<b>undetermined</b>, not as requirements, and should not be invented by an agent.</p>
+
+<footer>
+Axis And Allies Project design spec · generated 2026-08-16.
+Snapshot only — see the disclaimer at the top. Sections 1, 2 and 5 are the durable
+record; sections 3, 4, 6 and 7 restate files under <code>.claude/</code> that will
+drift.
+</footer>
+
+</main>
+</body>
+</html>
