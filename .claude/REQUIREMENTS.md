@@ -30,7 +30,7 @@ Status key: `FINAL` = settled · `PROVISIONAL` = in force but may be revisited
 
 **Active: no**
 
-The workspace default (`agents/STANDARDS.md` §7) is that every project keeps a
+The workspace default (`agents/STANDARDS.md` §8) is that every project keeps a
 changelog. This project switches it off, because the two things a changelog
 entry needs do not exist here yet:
 

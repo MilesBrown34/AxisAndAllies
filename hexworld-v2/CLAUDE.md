@@ -18,49 +18,22 @@ to work on it safely.
 
 ## Invariants — do not break
 
-1. **`src/core.js` stays pure and dual-environment.** No DOM, no Pixi, no I/O,
-   no `Date.now()`/`Math.random()`. All randomness flows through the injected
-   `mulberry32(seed)`. It must keep working both as a browser global
-   (`HexWorldCore`) and via node `require()` (UMD wrapper).
-2. **Every `src/procgen/` module is likewise pure** (UMD-lite, zero-dep, no
-   DOM/I/O). All procgen randomness comes from `mulberry32` **substreams
-   salted off the world seed** (`N.substream(seed, "name")` / positional
-   hashes) — never from a shared sequential stream, never from
-   `Math.random()`. Climate and the ICM refine pass draw NO randomness at all.
-3. **Determinism + RNG draw-order discipline.** Same
-   `(mode, seed, sizeKey, clusterR, dials, theme)` ⇒ byte-identical world.
-   `generateProcedural` replicates `core.generate`'s five main-stream draws in
-   the same order so the hex lattice matches Earth mode at the same seed —
-   preserve that draw order; noise/tectonics/hydrology randomness never
-   touches the main stream. Rendering reads generated state; it never adds
-   randomness.
-4. **Identity defaults, three layers (all regression-pinned):**
-   (a) Earth mode is byte-preserved — seed 1 medium ⇒ `totalLand === 1828`;
-   (b) every procedural dial's default value ≡ omitting the option entirely;
-   (c) the **terran theme is the identity** — `generateWorld` with terran is
-   byte-identical to pre-theme `generateProcedural`, and `res.seed` stays
-   USER-space (`themeSeed` hashes per-theme universes; it never draws).
-5. **Hex-layout invariance across node modes.** Toggling Node 1/7/19 must not
-   change which hexes exist — only their grouping. (That's why `generate()`
-   draws the cluster lattice-shift RNG values on every call, even when
-   `clusterR` is 0. Preserve that draw order.)
-6. **Raw vs facade layering.** `generateProcedural` stays RAW and theme-less;
-   themes, validation, and the seed+1 retry live only in the `generateWorld`
-   facade (`opts.predicate` is the test seam). Engine tests target the raw
-   layer; the app calls the facade.
-7. **`characterOverride` is a climate-only lever** — landmass-level and
-   terrain-invariant. It must NEVER change elevation/terrain; the A/B
-   contract tests depend on that (site-level per-continent forcing would
-   change relief and break them).
-8. **`PALETTE` in `biomes.js` is the single source** for map fills, the
-   legend, and the inspector. Themes may relabel/recolor EXISTING ids
-   (Dune's lake → "Oasis") — never invent a new biome id in a theme:
-   widening the enum ripples into every test that partitions on it.
-9. **The deliverable is one self-contained `index.html`** — no external
-   requests at runtime. Anything new gets inlined by `tools/build.mjs`
-   (`PROCGEN_ORDER` there is dependency order — keep it). Budget ≤ 1.3MB.
-10. **Antarctica is unplayable** in Earth mode (`UNPLAYABLE_CONTINENTS` in
-    core): rendered muted, excluded from interaction and playable stats.
+**Full text and the citation rule: `.claude/REQUIREMENTS.md`.** That file is the
+single source; this is the index. Every one of these must be cited by a test as
+`// INV-n`, and `./scripts/gate.sh` fails the node when it is not.
+
+| | Invariant |
+|---|---|
+| `INV-1` | `src/core.js` stays pure and dual-environment (no DOM/Pixi/IO, injected `mulberry32` only) |
+| `INV-2` | Every `src/procgen/` module is likewise pure; randomness only via seed-salted substreams |
+| `INV-3` | Determinism + RNG draw-order discipline — same inputs ⇒ byte-identical world |
+| `INV-4` | Identity defaults, three layers: Earth byte-preserved, dial defaults ≡ omission, terran ≡ identity |
+| `INV-5` | Hex-layout invariance across Node 1/7/19 — grouping changes, membership does not |
+| `INV-6` | Raw vs facade layering — `generateProcedural` stays raw; themes/validation/retry live in `generateWorld` |
+| `INV-7` | `characterOverride` is climate-only and terrain-invariant |
+| `INV-8` | `PALETTE` in `biomes.js` is the single source; themes never invent a biome id |
+| `INV-9` | The deliverable is one self-contained `index.html`, ≤ 1.3MB, no runtime requests |
+| `INV-10` | Antarctica is unplayable in Earth mode |
 
 ## Workflow — TDD, in this order
 
